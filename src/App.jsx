@@ -651,7 +651,7 @@ function AdminPanel({ users, setUsers, currentUser, onBack }) {
                 <td><span className={`role-badge-${u.role}`}>{u.role.toUpperCase()}</span></td>
                 <td style={{color:"#9ca3af",fontSize:12}}>{u.team||"—"}</td>
                 <td>
-                  <div style={{display:"flex",gap:6"}}>
+                  <div style={{display:"flex",gap:6}}>
                     <button className="btn-ghost" style={{padding:"4px 10px",fontSize:11}} onClick={()=>{setEditUser(u);setForm({...u});}}>Edit</button>
                     {u.id!==currentUser.id&&<button className="btn-danger" style={{padding:"4px 10px",fontSize:11}} onClick={()=>setUsers(us=>us.filter(x=>x.id!==u.id))}>Remove</button>}
                   </div>
