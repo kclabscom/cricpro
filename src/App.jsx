@@ -953,6 +953,7 @@ export default function App() {
     {id:"tournaments",icon:"🏆",label:"Tournaments"},
     {id:"grounds",icon:"🌿",label:"Grounds"},
     {id:"stats",icon:"📈",label:"Statistics"},
+    {id:"settings",icon:"👤",label:"My Account"},
     ...(currentUser.role===ROLES.ADMIN?[{id:"admin",icon:"⚙️",label:"Admin Panel"}]:[]),
   ];
 
@@ -987,8 +988,8 @@ export default function App() {
           </div>
         )}
         <div style={{padding:"12px 14px",borderTop:"1px solid #1a2035"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(currentUser.name)+"30",color:avatarColor(currentUser.name),fontWeight:700,fontSize:12,flexShrink:0}}>{initials(currentUser.name)}</div>
+          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",borderRadius:8,padding:6,transition:"background .15s",background:tab==="settings"?"#00e5a010":"transparent"}} onClick={()=>{setTab("settings");closeDeep();}}>
+            <div style={{width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(currentUser.name)+"30",color:avatarColor(currentUser.name),fontWeight:700,fontSize:12,flexShrink:0,border:`2px solid ${tab==="settings"?"#00e5a0":"transparent"}`}}>{initials(currentUser.name)}</div>
             {sidebarOpen&&<div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.name}</div>
               <div style={{display:"flex",gap:4,marginTop:2}}>
@@ -996,7 +997,7 @@ export default function App() {
                 {isPro(currentUser)&&<span className="tag-pro tag" style={{fontSize:9,padding:"1px 6px"}}>PRO</span>}
               </div>
             </div>}
-            {sidebarOpen&&<button onClick={logout} title="Logout" style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16}}>↩</button>}
+            {sidebarOpen&&<button onClick={e=>{e.stopPropagation();logout();}} title="Logout" style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16}}>↩</button>}
           </div>
         </div>
       </div>
@@ -1460,6 +1461,19 @@ export default function App() {
           </div>
         )}
 
+        {/* ── ACCOUNT SETTINGS ── */}
+        {tab==="settings"&&(
+          <AccountSettings
+            currentUser={currentUser}
+            setCurrentUser={setCurrentUser}
+            users={users}
+            setUsers={setUsers}
+            notify={notify}
+            logout={logout}
+            onUpgrade={handleUpgrade}
+          />
+        )}
+
         {/* ── ADMIN PANEL ── */}
         {tab==="admin"&&currentUser.role===ROLES.ADMIN&&(
           <div className="fadeIn">
@@ -1574,6 +1588,501 @@ export default function App() {
                 <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={()=>{if(!form.name||!form.email)return;setUsers(us=>[...us,{id:uid(),joinedDate:new Date().toISOString().split("T")[0],...form}]);closeModal();notify("User added!");}}>Add</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
               </div>
             </>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── ACCOUNT SETTINGS ──
+function AccountSettings({ currentUser, setCurrentUser, users, setUsers, notify, logout, onUpgrade }) {
+  const [activeTab, setActiveTab] = useState("profile");
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({
+    name:  currentUser.name  || "",
+    email: currentUser.email || "",
+    phone: currentUser.phone || "",
+    city:  currentUser.city  || "",
+    team:  currentUser.team  || "",
+    bio:   currentUser.bio   || "",
+  });
+  const [pwForm, setPwForm] = useState({ current:"", newpw:"", confirm:"" });
+  const [pwError, setPwError] = useState("");
+  const [cancelModal, setCancelModal] = useState(false);
+  const [notifPrefs, setNotifPrefs] = useState({ matchStart:true, liveScore:true, teamUpdate:false, proRenewal:true, newTournament:true, weeklyDigest:false });
+
+  const pro = isPro(currentUser);
+  const joinDate = currentUser.joinedDate || "2026-01-01";
+  // Simulate billing dates
+  const joinMs   = new Date(joinDate).getTime();
+  const nowMs    = Date.now();
+  const cycleDay = Math.floor((nowMs - joinMs) / (30*24*60*60*1000));
+  const nextBill = new Date(joinMs + (cycleDay+1)*30*24*60*60*1000);
+  const daysLeft = Math.max(0, Math.ceil((nextBill - nowMs) / (24*60*60*1000)));
+  const expiryDate = fmtDate(nextBill.toISOString().split("T")[0]);
+
+  const PAYMENT_HISTORY = pro ? [
+    {id:"INV-2026-003", date:"2026-03-01", amount:"₹99", plan:"Pro Monthly", method:"UPI · @okaxis",  status:"Paid"},
+    {id:"INV-2026-002", date:"2026-02-01", amount:"₹99", plan:"Pro Monthly", method:"UPI · @okaxis",  status:"Paid"},
+    {id:"INV-2026-001", date:"2026-01-01", amount:"₹99", plan:"Pro Monthly", method:"UPI · @okaxis",  status:"Paid"},
+  ] : [];
+
+  const sf  = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const spf = k => e => setPwForm(f => ({ ...f, [k]: e.target.value }));
+
+  const saveProfile = () => {
+    const updated = { ...currentUser, ...form };
+    setCurrentUser(updated);
+    setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
+    setEditMode(false);
+    notify("Profile updated successfully!");
+  };
+
+  const changePassword = () => {
+    if (pwForm.current !== currentUser.password) { setPwError("Current password is incorrect"); return; }
+    if (pwForm.newpw.length < 6) { setPwError("New password must be at least 6 characters"); return; }
+    if (pwForm.newpw !== pwForm.confirm) { setPwError("Passwords don't match"); return; }
+    const updated = { ...currentUser, password: pwForm.newpw };
+    setCurrentUser(updated);
+    setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
+    setPwForm({ current:"", newpw:"", confirm:"" });
+    setPwError("");
+    notify("Password changed successfully!");
+  };
+
+  const cancelSubscription = () => {
+    const updated = { ...currentUser, plan: PLANS.FREE };
+    setCurrentUser(updated);
+    setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
+    setCancelModal(false);
+    notify(`Pro cancelled. Access continues until ${expiryDate}`, "error");
+  };
+
+  const STABS = [
+    { id:"profile",    icon:"👤", label:"Profile" },
+    { id:"membership", icon:"⭐", label:"Membership" },
+    { id:"billing",    icon:"💳", label:"Billing & Payments" },
+    { id:"security",   icon:"🔒", label:"Security" },
+    { id:"notifs",     icon:"🔔", label:"Notifications" },
+    { id:"danger",     icon:"⚠️", label:"Danger Zone", red:true },
+  ];
+
+  const Row = ({ label, children, value }) => (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"13px 0",borderBottom:"1px solid #0f1623"}}>
+      <span style={{color:"#6b7280",fontSize:13,minWidth:160,flexShrink:0}}>{label}</span>
+      <div style={{flex:1,textAlign:"right"}}>{children ?? <span style={{fontWeight:600,fontSize:13}}>{value||"—"}</span>}</div>
+    </div>
+  );
+
+  const Sect = ({ title, children, action }) => (
+    <div className="card" style={{padding:24,marginBottom:16}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <div style={{fontFamily:"'Bebas Neue'",fontSize:18,letterSpacing:1}}>{title}</div>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div className="fadeIn">
+      {/* Page header */}
+      <div className="card" style={{padding:24,marginBottom:20,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:0,right:0,width:180,height:180,background:avatarColor(currentUser.name),opacity:.05,borderRadius:"0 0 0 180px"}}/>
+        <div style={{display:"flex",alignItems:"center",gap:20,flexWrap:"wrap"}}>
+          <div style={{width:76,height:76,borderRadius:18,display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(currentUser.name)+"30",color:avatarColor(currentUser.name),fontWeight:700,fontSize:28,flexShrink:0,border:`3px solid ${avatarColor(currentUser.name)}50`}}>
+            {initials(currentUser.name)}
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Bebas Neue'",fontSize:28,letterSpacing:1}}>{currentUser.name}</div>
+            <div style={{color:"#9ca3af",fontSize:13,marginBottom:8}}>{currentUser.email}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <span className={`role-badge-${currentUser.role}`}>{currentUser.role.toUpperCase()}</span>
+              {pro
+                ? <span style={{display:"inline-flex",alignItems:"center",gap:5,background:"linear-gradient(135deg,#f59e0b,#fb923c)",color:"#0a0e1a",padding:"3px 12px",borderRadius:20,fontSize:11,fontWeight:800}}>⭐ PRO MEMBER</span>
+                : <span className="tag tag-blue" style={{fontSize:11}}>FREE PLAN</span>}
+              {currentUser.team && <span className="tag tag-green" style={{fontSize:11}}>🏏 {currentUser.team}</span>}
+            </div>
+          </div>
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontSize:12,color:"#6b7280"}}>Member since</div>
+            <div style={{fontWeight:700,fontSize:14,marginTop:2}}>{fmtDate(joinDate)}</div>
+            {pro && <div style={{fontSize:12,color:"#f59e0b",marginTop:4}}>Renews {expiryDate}</div>}
+          </div>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:20,alignItems:"flex-start"}}>
+        {/* Left nav */}
+        <div style={{width:190,flexShrink:0}}>
+          <div className="card" style={{padding:6}}>
+            {STABS.map(t => (
+              <button key={t.id} onClick={() => setActiveTab(t.id)}
+                style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:8,border:"none",
+                  background:activeTab===t.id?"#00e5a010":"transparent",
+                  color:activeTab===t.id?"#00e5a0":t.red?"#ff6b6b":"#9ca3af",
+                  fontWeight:activeTab===t.id?600:400,fontSize:13,cursor:"pointer",fontFamily:"'DM Sans'",transition:"all .15s",textAlign:"left"}}>
+                <span style={{fontSize:16}}>{t.icon}</span><span>{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content panel */}
+        <div style={{flex:1,minWidth:0}}>
+
+          {/* ── PROFILE ── */}
+          {activeTab==="profile" && (
+            <Sect title="PERSONAL INFORMATION" action={
+              editMode
+                ? <div style={{display:"flex",gap:8}}>
+                    <button className="btn-primary" style={{padding:"6px 16px",fontSize:12}} onClick={saveProfile}>Save Changes</button>
+                    <button className="btn-ghost"   style={{padding:"6px 16px",fontSize:12}} onClick={()=>setEditMode(false)}>Cancel</button>
+                  </div>
+                : <button className="btn-ghost" style={{padding:"6px 16px",fontSize:12}} onClick={()=>setEditMode(true)}>✏ Edit Profile</button>
+            }>
+              {editMode ? (
+                <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                  <div className="grid-2">
+                    <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Full Name</label><input value={form.name} onChange={sf("name")}/></div>
+                    <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Email Address</label><input value={form.email} onChange={sf("email")} type="email"/></div>
+                  </div>
+                  <div className="grid-2">
+                    <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Phone Number</label><input value={form.phone} onChange={sf("phone")} placeholder="+91 98000 00000"/></div>
+                    <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>City</label><input value={form.city} onChange={sf("city")} placeholder="Your city"/></div>
+                  </div>
+                  <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Cricket Team / Club</label><input value={form.team} onChange={sf("team")} placeholder="Your cricket team or club name"/></div>
+                  <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Bio</label><textarea value={form.bio} onChange={sf("bio")} placeholder="Tell other players about yourself..." rows={3}/></div>
+                </div>
+              ) : (
+                <div>
+                  <Row label="Full Name"        value={currentUser.name}/>
+                  <Row label="Email Address"    value={currentUser.email}/>
+                  <Row label="Phone Number"     value={currentUser.phone || "Not added"}/>
+                  <Row label="City"             value={currentUser.city  || "Not added"}/>
+                  <Row label="Cricket Team"     value={currentUser.team  || "Not linked"}/>
+                  <Row label="Bio"              value={currentUser.bio   || "No bio yet"}/>
+                  <Row label="Account Role"><span className={`role-badge-${currentUser.role}`}>{currentUser.role.toUpperCase()}</span></Row>
+                  <Row label="Member Since"     value={fmtDate(joinDate)}/>
+                  <Row label="Account ID"><span style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:"#6b7280"}}>{currentUser.id}</span></Row>
+                </div>
+              )}
+            </Sect>
+          )}
+
+          {/* ── MEMBERSHIP ── */}
+          {activeTab==="membership" && (
+            <div>
+              {/* Plan card */}
+              <div style={{background:pro?"linear-gradient(135deg,#1a1200,#100d00)":"#0d1221",border:`2px solid ${pro?"#f59e0b":"#1a2035"}`,borderRadius:16,padding:24,marginBottom:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:12}}>
+                  <div>
+                    <div style={{fontSize:11,color:"#6b7280",letterSpacing:1,marginBottom:6}}>CURRENT PLAN</div>
+                    <div style={{fontFamily:"'Bebas Neue'",fontSize:36,color:pro?"#f59e0b":"#e8eaf6"}}>{pro?"⭐ PRO":"FREE"}</div>
+                    <div style={{fontFamily:"'Bebas Neue'",fontSize:22,color:"#9ca3af"}}>{pro?"₹99 / month":"₹0 / month"}</div>
+                    {pro && <div style={{fontSize:12,color:"#6b7280",marginTop:6}}>Auto-renews on <b style={{color:"#f59e0b"}}>{expiryDate}</b></div>}
+                  </div>
+                  {pro ? (
+                    <div style={{textAlign:"right"}}>
+                      <div style={{fontSize:12,color:"#6b7280"}}>Next billing date</div>
+                      <div style={{fontFamily:"'Bebas Neue'",fontSize:22,color:"#f59e0b",marginTop:4}}>{expiryDate}</div>
+                      <div style={{fontSize:12,color:"#6b7280",marginTop:4}}>{daysLeft} days remaining in cycle</div>
+                      <div style={{fontSize:12,color:"#00e5a0",marginTop:2}}>Auto-renewal is ON</div>
+                    </div>
+                  ) : (
+                    <button className="btn-pro" onClick={onUpgrade} style={{padding:"12px 24px",fontSize:15}}>⭐ Upgrade to Pro</button>
+                  )}
+                </div>
+                {pro && (
+                  <div style={{marginTop:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:6,fontSize:12,color:"#6b7280"}}>
+                      <span>Billing cycle progress</span><span style={{color:"#f59e0b"}}>{daysLeft} / 30 days left</span>
+                    </div>
+                    <div style={{height:6,background:"#1a2035",borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${Math.min((daysLeft/30)*100,100)}%`,background:"linear-gradient(90deg,#f59e0b,#fb923c)",borderRadius:3,transition:"width 1s ease"}}/>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Membership details */}
+              {pro && (
+                <Sect title="MEMBERSHIP DETAILS">
+                  <Row label="Plan"              value="CricPro Pro — Monthly"/>
+                  <Row label="Status"><span className="tag tag-green">Active</span></Row>
+                  <Row label="Started On"        value={fmtDate(joinDate)}/>
+                  <Row label="Current Period"    value={`${fmtDate(new Date(Date.now()-daysLeft*24*60*60*1000+(30-daysLeft)*24*60*60*1000-29*24*60*60*1000).toISOString().split("T")[0])} → ${expiryDate}`}/>
+                  <Row label="Renewal Date"      value={expiryDate}/>
+                  <Row label="Expiry (if cancelled)" value={expiryDate}/>
+                  <Row label="Renewal Amount"    value="₹99"/>
+                  <Row label="Billing Cycle"     value="Monthly (every 30 days)"/>
+                  <Row label="Auto-Renewal"><span style={{color:"#00e5a0",fontWeight:600}}>✓ Enabled</span></Row>
+                  <Row label="Payment Method"    value="UPI — linked account"/>
+                  <div style={{display:"flex",gap:10,marginTop:16}}>
+                    <button className="btn-ghost" style={{fontSize:13}} onClick={()=>notify("Redirecting to payment settings...")}>Change Payment Method</button>
+                    <button style={{background:"transparent",color:"#ff6b6b",border:"1px solid #ff6b6b30",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer"}} onClick={()=>setCancelModal(true)}>Cancel Subscription</button>
+                  </div>
+                </Sect>
+              )}
+
+              {/* What's included */}
+              <Sect title={`YOUR PLAN INCLUDES`}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                  {(pro
+                    ? ["All matches & live scores","Innings-by-innings breakdown","Advanced batting & bowling analysis","Unlimited teams & tournaments","Performance charts & trends","Priority live scoring","Export stats to PDF","Career progression graphs","AI match insights"]
+                    : ["All matches & live scores","Basic player stats","Join 1 team","Register for 1 tournament","Live score viewing"]
+                  ).map(f=>(
+                    <div key={f} style={{display:"flex",gap:8,alignItems:"center",padding:"8px 12px",background:"#111827",borderRadius:8,fontSize:13}}>
+                      <span style={{color:pro?"#f59e0b":"#00e5a0",flexShrink:0}}>{pro?"⭐":"✓"}</span>
+                      <span style={{color:"#e8eaf6"}}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+                {!pro && (
+                  <div style={{marginTop:16,padding:16,background:"#1a1200",border:"1px solid #f59e0b20",borderRadius:10}}>
+                    <div style={{fontWeight:700,color:"#f59e0b",marginBottom:6}}>Upgrade to Pro — ₹99/month</div>
+                    <div style={{fontSize:13,color:"#9ca3af",marginBottom:12}}>Unlock innings breakdowns, performance charts, unlimited teams, PDF export and more.</div>
+                    <button className="btn-pro" onClick={onUpgrade}>⭐ Start 7-Day Free Trial</button>
+                  </div>
+                )}
+              </Sect>
+            </div>
+          )}
+
+          {/* ── BILLING & PAYMENTS ── */}
+          {activeTab==="billing" && (
+            <div>
+              <Sect title="PAYMENT METHOD">
+                {pro ? (
+                  <div>
+                    <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",background:"#111827",borderRadius:10,marginBottom:12,border:"1px solid #1a2035"}}>
+                      <div style={{width:46,height:30,background:"linear-gradient(135deg,#f59e0b,#fb923c)",borderRadius:6,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>💳</div>
+                      <div style={{flex:1}}>
+                        <div style={{fontWeight:600,fontSize:14}}>UPI — @okaxis</div>
+                        <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>Primary · Auto-pay enabled · Verified</div>
+                      </div>
+                      <span className="tag tag-green" style={{fontSize:10}}>Active</span>
+                    </div>
+                    <div style={{display:"flex",gap:10}}>
+                      <button className="btn-ghost" style={{fontSize:13}} onClick={()=>notify("Payment method update coming soon!")}>+ Add Method</button>
+                      <button className="btn-ghost" style={{fontSize:13}} onClick={()=>notify("Redirecting to UPI settings...")}>Edit</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{textAlign:"center",padding:"20px 0",color:"#6b7280",fontSize:13}}>
+                    No payment method on file.
+                    <div style={{marginTop:12}}><button className="btn-pro" onClick={onUpgrade}>⭐ Add Method via Pro Upgrade</button></div>
+                  </div>
+                )}
+              </Sect>
+
+              <Sect title="PAYMENT HISTORY">
+                {PAYMENT_HISTORY.length ? (
+                  <div>
+                    <table>
+                      <thead><tr><th>Invoice</th><th>Date</th><th>Plan</th><th>Amount</th><th>Method</th><th>Status</th><th></th></tr></thead>
+                      <tbody>
+                        {PAYMENT_HISTORY.map(p=>(
+                          <tr key={p.id}>
+                            <td style={{fontFamily:"'JetBrains Mono'",fontSize:11,color:"#6b7280"}}>{p.id}</td>
+                            <td style={{color:"#9ca3af",fontSize:12}}>{fmtDate(p.date)}</td>
+                            <td><span className="tag tag-purple" style={{fontSize:10}}>{p.plan}</span></td>
+                            <td style={{fontFamily:"'Bebas Neue'",fontSize:18,color:"#00e5a0"}}>{p.amount}</td>
+                            <td style={{fontSize:11,color:"#6b7280"}}>{p.method}</td>
+                            <td><span className="tag tag-green" style={{fontSize:10}}>{p.status}</span></td>
+                            <td>
+                              <button className="btn-ghost" style={{padding:"3px 10px",fontSize:11}}
+                                onClick={()=>notify(`Invoice ${p.id} PDF will be emailed to you`)}>↓ PDF</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div style={{marginTop:14,padding:"12px 14px",background:"#111827",borderRadius:8,display:"flex",justifyContent:"space-between",fontSize:13}}>
+                      <span style={{color:"#6b7280"}}>Total spent (all time)</span>
+                      <span style={{fontFamily:"'Bebas Neue'",fontSize:18,color:"#00e5a0"}}>₹{PAYMENT_HISTORY.length*99}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{textAlign:"center",padding:"28px 0"}}>
+                    <div style={{fontSize:36,marginBottom:8}}>📄</div>
+                    <div style={{color:"#6b7280",fontSize:13,marginBottom:12}}>No payment history yet.</div>
+                    {!pro && <button className="btn-pro" onClick={onUpgrade}>⭐ Upgrade to Pro</button>}
+                  </div>
+                )}
+              </Sect>
+
+              {pro && (
+                <Sect title="BILLING SUMMARY">
+                  <Row label="Active since"          value={fmtDate(joinDate)}/>
+                  <Row label="Current billing period" value={`...→ ${expiryDate}`}/>
+                  <Row label="Next renewal date"     value={expiryDate}/>
+                  <Row label="Next renewal amount"   value="₹99"/>
+                  <Row label="Total invoices"        value={`${PAYMENT_HISTORY.length} payments`}/>
+                  <Row label="Total paid"            value={`₹${PAYMENT_HISTORY.length*99}`}/>
+                  <Row label="GST / Tax"             value="Included in ₹99"/>
+                  <Row label="Billing cycle"         value="Monthly"/>
+                </Sect>
+              )}
+            </div>
+          )}
+
+          {/* ── SECURITY ── */}
+          {activeTab==="security" && (
+            <div>
+              <Sect title="CHANGE PASSWORD">
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {pwError && <div style={{background:"#ff6b6b15",border:"1px solid #ff6b6b30",borderRadius:8,padding:"10px 14px",color:"#ff6b6b",fontSize:13}}>{pwError}</div>}
+                  <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Current Password</label><input type="password" placeholder="Enter current password" value={pwForm.current} onChange={spf("current")}/></div>
+                  <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>New Password</label><input type="password" placeholder="Minimum 6 characters" value={pwForm.newpw} onChange={spf("newpw")}/></div>
+                  <div><label style={{fontSize:12,color:"#6b7280",display:"block",marginBottom:5}}>Confirm New Password</label><input type="password" placeholder="Repeat new password" value={pwForm.confirm} onChange={spf("confirm")}/></div>
+                  <button className="btn-primary" style={{width:180,marginTop:4}} onClick={changePassword}>Update Password</button>
+                </div>
+              </Sect>
+
+              <Sect title="ACTIVE SESSIONS">
+                {[
+                  {device:"Chrome · Windows",  location:"Denton, TX",  time:"Now — active",  current:true},
+                  {device:"Chrome · Android",  location:"Mumbai, IN",  time:"2 days ago"},
+                  {device:"Safari · iPhone",   location:"Delhi, IN",   time:"5 days ago"},
+                ].map((s,i)=>(
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid #0f1623"}}>
+                    <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                      <span style={{fontSize:24}}>{s.device.includes("Android")||s.device.includes("iPhone")?"📱":"💻"}</span>
+                      <div>
+                        <div style={{fontWeight:600,fontSize:13}}>{s.device}</div>
+                        <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{s.location} · {s.time}</div>
+                      </div>
+                    </div>
+                    {s.current
+                      ? <span className="tag tag-green" style={{fontSize:10}}>This device</span>
+                      : <button style={{background:"transparent",color:"#ff6b6b",border:"1px solid #ff6b6b30",borderRadius:6,padding:"4px 10px",fontSize:11,cursor:"pointer"}} onClick={()=>notify("Session revoked")}>Revoke</button>}
+                  </div>
+                ))}
+              </Sect>
+
+              <Sect title="SECURITY SETTINGS">
+                <Row label="Two-Factor Auth">
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <span style={{color:"#ff6b6b",fontSize:13}}>Not enabled</span>
+                    <button className="btn-ghost" style={{padding:"4px 12px",fontSize:11}} onClick={()=>notify("2FA setup coming soon!")}>Enable 2FA</button>
+                  </div>
+                </Row>
+                <Row label="Login method"      value="Email & Password"/>
+                <Row label="Last password change" value="Never"/>
+                <Row label="Account created"   value={fmtDate(joinDate)}/>
+              </Sect>
+            </div>
+          )}
+
+          {/* ── NOTIFICATIONS ── */}
+          {activeTab==="notifs" && (
+            <Sect title="NOTIFICATION PREFERENCES">
+              {[
+                {key:"matchStart",    label:"Match Start Reminders",    desc:"Get notified 30 mins before your team's match"},
+                {key:"liveScore",     label:"Live Score Updates",        desc:"Ball-by-ball score notifications during matches"},
+                {key:"teamUpdate",    label:"Team Announcements",        desc:"Messages from your team captain or organizer"},
+                {key:"proRenewal",    label:"Pro Renewal Reminder",      desc:"7 days before your Pro subscription renews"},
+                {key:"newTournament", label:"New Tournament Alerts",     desc:"When a new tournament opens for registration"},
+                {key:"weeklyDigest",  label:"Weekly Stats Digest",       desc:"Your performance summary every Monday morning"},
+              ].map(n=>(
+                <div key={n.key} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid #0f1623"}}>
+                  <div>
+                    <div style={{fontWeight:600,fontSize:13}}>{n.label}</div>
+                    <div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{n.desc}</div>
+                  </div>
+                  <button
+                    onClick={()=>{
+                      setNotifPrefs(p=>({...p,[n.key]:!p[n.key]}));
+                      notify(`${n.label} ${notifPrefs[n.key]?"disabled":"enabled"}`);
+                    }}
+                    style={{width:46,height:26,borderRadius:13,border:"none",background:notifPrefs[n.key]?"#00e5a0":"#1a2035",cursor:"pointer",position:"relative",transition:"background .25s",flexShrink:0,marginLeft:16}}>
+                    <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:4,transition:"left .25s",left:notifPrefs[n.key]?"24px":"4px"}}/>
+                  </button>
+                </div>
+              ))}
+              <div style={{marginTop:16,display:"flex",gap:10}}>
+                <button className="btn-primary" style={{fontSize:13}} onClick={()=>notify("Notification preferences saved!")}>Save Preferences</button>
+                <button className="btn-ghost"   style={{fontSize:13}} onClick={()=>setNotifPrefs({matchStart:true,liveScore:true,teamUpdate:false,proRenewal:true,newTournament:true,weeklyDigest:false})}>Reset to Default</button>
+              </div>
+            </Sect>
+          )}
+
+          {/* ── DANGER ZONE ── */}
+          {activeTab==="danger" && (
+            <div>
+              <Sect title="EXPORT YOUR DATA">
+                <div style={{color:"#9ca3af",fontSize:13,marginBottom:14}}>Download a full copy of your CricPro data including profile, match history, and stats as a JSON file.</div>
+                <button className="btn-ghost" onClick={()=>notify("Data export will be emailed within 24 hours")}>📦 Request Data Export</button>
+              </Sect>
+
+              <div className="card" style={{padding:24,border:"1px solid #ff6b6b20"}}>
+                <div style={{fontFamily:"'Bebas Neue'",fontSize:18,color:"#ff6b6b",letterSpacing:1,marginBottom:16}}>DANGER ZONE</div>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {[
+                    {
+                      title:"Deactivate Account",
+                      desc:"Temporarily disable your account. You can reactivate by logging in again.",
+                      action:"Deactivate",
+                      onClick:()=>notify("Account deactivation request submitted","error"),
+                    },
+                    {
+                      title:"Sign Out of All Devices",
+                      desc:"Revoke all active sessions and sign out everywhere.",
+                      action:"Sign Out All",
+                      onClick:()=>{notify("Signed out of all devices");setTimeout(logout,800);},
+                    },
+                    {
+                      title:"Delete Account Permanently",
+                      desc:"Permanently delete your account and all data. This cannot be undone.",
+                      action:"Delete Account",
+                      danger:true,
+                      onClick:()=>{if(window.confirm("This will permanently delete your account. Are you absolutely sure?"))logout();},
+                    },
+                  ].map((item,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",background:"#0f0a0a",border:"1px solid #ff6b6b15",borderRadius:10,gap:12,flexWrap:"wrap"}}>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:13,color:item.danger?"#ff6b6b":"#e8eaf6"}}>{item.title}</div>
+                        <div style={{fontSize:12,color:"#6b7280",marginTop:3}}>{item.desc}</div>
+                      </div>
+                      <button
+                        onClick={item.onClick}
+                        style={{background:"transparent",color:"#ff6b6b",border:"1px solid #ff6b6b40",borderRadius:8,padding:"8px 16px",fontSize:13,fontWeight:600,cursor:"pointer",flexShrink:0,transition:"all .2s"}}
+                        onMouseEnter={e=>{e.target.style.background="#ff6b6b15";}}
+                        onMouseLeave={e=>{e.target.style.background="transparent";}}>
+                        {item.action}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+
+      {/* Cancel subscription confirmation modal */}
+      {cancelModal && (
+        <div className="modal-overlay" onClick={e=>{if(e.target.className==="modal-overlay")setCancelModal(false);}}>
+          <div className="modal" style={{maxWidth:420}}>
+            <div style={{fontFamily:"'Bebas Neue'",fontSize:24,color:"#ff6b6b",marginBottom:8}}>CANCEL SUBSCRIPTION?</div>
+            <div style={{color:"#9ca3af",fontSize:14,marginBottom:18}}>
+              You'll lose Pro access on <b style={{color:"#e8eaf6"}}>{expiryDate}</b>. Your data will be saved but these features will be locked:
+            </div>
+            <div style={{background:"#111827",borderRadius:10,padding:14,marginBottom:20}}>
+              {["Innings-by-innings breakdown","Performance charts & trends","Advanced analytics","PDF export"].map(f=>(
+                <div key={f} style={{display:"flex",gap:8,fontSize:13,color:"#ff6b6b",marginBottom:6}}>
+                  <span>✗</span><span>{f}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn-pro"    style={{flex:1,padding:12}} onClick={()=>setCancelModal(false)}>Keep Pro ⭐</button>
+              <button style={{flex:1,padding:12,background:"transparent",color:"#ff6b6b",border:"1px solid #ff6b6b40",borderRadius:8,fontWeight:700,cursor:"pointer"}}
+                onClick={cancelSubscription}>Confirm Cancel</button>
+            </div>
           </div>
         </div>
       )}
