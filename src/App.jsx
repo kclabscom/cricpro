@@ -343,135 +343,261 @@ function PaymentModal({ user, onSuccess, onClose }) {
   );
 }
 
+// ── CRICKET ANIMATED BACKGROUND ──
+function CricketBackground() {
+  const items = [
+    {icon:"🏏",x:8,y:12,size:52,dur:14,delay:0,rot:25},
+    {icon:"🏏",x:80,y:70,size:38,dur:18,delay:3,rot:-15},
+    {icon:"🎳",x:20,y:60,size:44,dur:16,delay:1,rot:0},
+    {icon:"🎳",x:70,y:20,size:32,dur:20,delay:5,rot:10},
+    {icon:"⛑️",x:50,y:8,size:48,dur:13,delay:2,rot:-20},
+    {icon:"⛑️",x:88,y:45,size:34,dur:22,delay:4,rot:30},
+    {icon:"🏟️",x:35,y:80,size:56,dur:17,delay:0,rot:0},
+    {icon:"🏟️",x:62,y:55,size:36,dur:19,delay:6,rot:5},
+    {icon:"🌿",x:5,y:88,size:40,dur:15,delay:2,rot:-10},
+    {icon:"🌿",x:92,y:85,size:30,dur:21,delay:3,rot:15},
+    {icon:"🏆",x:45,y:35,size:42,dur:12,delay:1,rot:0},
+    {icon:"🏆",x:15,y:38,size:28,dur:24,delay:7,rot:-5},
+    {icon:"👟",x:75,y:92,size:34,dur:16,delay:0,rot:20},
+    {icon:"👟",x:28,y:5,size:30,dur:20,delay:4,rot:-25},
+    {icon:"📣",x:58,y:78,size:36,dur:18,delay:2,rot:10},
+    {icon:"📣",x:3,y:52,size:28,dur:23,delay:5,rot:-8},
+  ];
+  const css = `
+    @keyframes floatUp{0%{transform:translateY(0) rotate(var(--rot));opacity:.12}50%{transform:translateY(-28px) rotate(calc(var(--rot) + 8deg));opacity:.22}100%{transform:translateY(0) rotate(var(--rot));opacity:.12}}
+    @keyframes driftAcross{0%{transform:translateX(0) rotate(var(--rot));opacity:.10}50%{transform:translateX(18px) rotate(calc(var(--rot) - 6deg));opacity:.20}100%{transform:translateX(0) rotate(var(--rot));opacity:.10}}
+    @keyframes pitchPulse{0%,100%{opacity:.07}50%{opacity:.15}}
+    .cf{animation:floatUp var(--dur)s ease-in-out infinite}
+    .cd{animation:driftAcross var(--dur)s ease-in-out infinite}
+  `;
+  return (
+    <>
+      <style>{css}</style>
+      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at 30% 60%,#0d2d20 0%,#0a0e1a 55%,#0d1221 100%)",zIndex:0}}/>
+      <svg style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:1,animation:"pitchPulse 4s ease-in-out infinite"}} viewBox="0 0 500 700" preserveAspectRatio="none">
+        <ellipse cx="250" cy="350" rx="230" ry="310" fill="none" stroke="#00e5a0" strokeWidth="1.5" strokeDasharray="8 6"/>
+        <rect x="215" y="200" width="70" height="300" fill="none" stroke="#00e5a0" strokeWidth="1" strokeDasharray="5 5"/>
+        <line x1="205" y1="270" x2="295" y2="270" stroke="#00e5a0" strokeWidth="1.5"/>
+        <line x1="205" y1="430" x2="295" y2="430" stroke="#00e5a0" strokeWidth="1.5"/>
+        <line x1="236" y1="200" x2="236" y2="220" stroke="#f59e0b" strokeWidth="2"/>
+        <line x1="250" y1="200" x2="250" y2="220" stroke="#f59e0b" strokeWidth="2"/>
+        <line x1="264" y1="200" x2="264" y2="220" stroke="#f59e0b" strokeWidth="2"/>
+        <line x1="236" y1="480" x2="236" y2="500" stroke="#f59e0b" strokeWidth="2"/>
+        <line x1="250" y1="480" x2="250" y2="500" stroke="#f59e0b" strokeWidth="2"/>
+        <line x1="264" y1="480" x2="264" y2="500" stroke="#f59e0b" strokeWidth="2"/>
+        <path d="M 250 490 Q 210 350 250 210" fill="none" stroke="#ff6b6b" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.5"/>
+        {Array.from({length:40}).map((_,i)=><circle key={`t${i}`} cx={30+(i%20)*22+(Math.floor(i/20)%2)*11} cy={640+Math.floor(i/20)*18+(i%3)*5} r="3" fill={["#00e5a0","#f59e0b","#60a5fa","#e8eaf6"][i%4]} opacity="0.2"/>)}
+        {Array.from({length:40}).map((_,i)=><circle key={`b${i}`} cx={30+(i%20)*22+(Math.floor(i/20)%2)*11} cy={60-Math.floor(i/20)*14-(i%3)*4} r="3" fill={["#00e5a0","#f59e0b","#60a5fa","#e8eaf6"][i%4]} opacity="0.2"/>)}
+      </svg>
+      {items.map((item,i)=>(
+        <div key={i} className={i%2===0?"cf":"cd"} style={{position:"absolute",left:`${item.x}%`,top:`${item.y}%`,fontSize:item.size,"--dur":`${item.dur}`,"--rot":`${item.rot}deg`,animationDelay:`${item.delay}s`,zIndex:2,userSelect:"none",pointerEvents:"none"}}>
+          {item.icon}
+        </div>
+      ))}
+      <div style={{position:"absolute",bottom:36,right:36,zIndex:3,fontFamily:"'Bebas Neue',sans-serif",fontSize:12,letterSpacing:3,color:"#00e5a0",opacity:.22,textAlign:"right",lineHeight:1.9,pointerEvents:"none"}}>
+        <div>CITY T20 PREMIER</div>
+        <div style={{fontSize:10,color:"#f59e0b"}}>LIVE · IN PROGRESS</div>
+        <div style={{fontSize:30,color:"#fff",marginTop:2}}>142/4</div>
+        <div style={{fontSize:10,color:"#9ca3af"}}>15.2 OVERS</div>
+      </div>
+    </>
+  );
+}
+
 // ── AUTH PAGE (Login + Signup) ──
+// Session key — persists across refresh within same browser tab session
+const SESSION_KEY = "cricpro_session_v1";
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function AuthPage({ users, setUsers, onLogin }) {
-  const [mode, setMode] = useState("login"); // login | signup | pricing
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState({role:ROLES.PLAYER,plan:PLANS.FREE});
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
-  const [signupStep, setSignupStep] = useState(1); // 1=details, 2=plan
+  const [signupStep, setSignupStep] = useState(1);
 
-  const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
+  // Restore session on page refresh
+  useEffect(()=>{
+    try {
+      const saved = sessionStorage.getItem(SESSION_KEY);
+      if(saved){
+        const {userId} = JSON.parse(saved);
+        const u = users.find(u=>u.id===userId);
+        if(u) onLogin(u);
+      }
+    } catch(e){}
+  },[]);// eslint-disable-line
+
+  const sf = k => e => { setForm(f=>({...f,[k]:e.target.value})); setFieldErrors(fe=>({...fe,[k]:""})); setError(""); };
+
+  const validateEmail = email => {
+    if(!email) return "Email is required";
+    if(!emailRegex.test(email)) return "Enter a valid email — e.g. name@example.com";
+    return "";
+  };
 
   const handleLogin = () => {
+    const ee = validateEmail(form.email);
+    if(ee) return setFieldErrors(fe=>({...fe,email:ee}));
     const u = users.find(u=>u.email===form.email&&u.password===form.password);
     if(u) onLogin(u);
     else setError("Invalid email or password.");
   };
 
+  const handleNextStep = () => {
+    const errs = {};
+    if(!form.name?.trim()) errs.name = "Full name is required";
+    const ee = validateEmail(form.email);
+    if(ee) errs.email = ee;
+    else if(users.find(u=>u.email===form.email)) errs.email = "Email already registered — sign in instead";
+    if(!form.password) errs.password = "Password is required";
+    else if(form.password.length<6) errs.password = "Minimum 6 characters required";
+    if(Object.keys(errs).length>0) return setFieldErrors(errs);
+    setFieldErrors({}); setError(""); setSignupStep(2);
+  };
+
   const handleSignup = () => {
-    if(!form.name||!form.email||!form.password) return setError("Fill in all fields");
-    if(users.find(u=>u.email===form.email)) return setError("Email already registered");
-    if(form.password.length<6) return setError("Password must be 6+ characters");
-    const newUser = {id:uid(),name:form.name,email:form.email,password:form.password,role:ROLES.PLAYER,plan:form.plan||PLANS.FREE,team:null,joinedDate:new Date().toISOString().split("T")[0]};
+    const newUser = {id:uid(),name:form.name,email:form.email,password:form.password,role:form.role||ROLES.PLAYER,plan:form.plan||PLANS.FREE,team:null,joinedDate:new Date().toISOString().split("T")[0]};
     setUsers(us=>[...us,newUser]);
     onLogin(newUser);
   };
 
+  const Err = ({k}) => fieldErrors[k]
+    ? <div style={{fontSize:11,color:"#ff6b6b",marginTop:4,marginLeft:2,display:"flex",alignItems:"center",gap:4}}>⚠ {fieldErrors[k]}</div>
+    : null;
+
+  const inp = k => ({border:`1px solid ${fieldErrors[k]?"#ff6b6b60":"#1e2a3a"}`,boxShadow:fieldErrors[k]?"0 0 0 2px #ff6b6b18":"none"});
+
   if(mode==="pricing") return <PricingPage user={null} onUpgrade={()=>{setForm(f=>({...f,plan:PLANS.PRO}));setMode("signup");}} onClose={()=>setMode("signup")}/>;
 
   return (
-    <div style={{minHeight:"100vh",background:"#0a0e1a",display:"flex",padding:20}}>
-      {/* Left panel */}
-      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40}}>
-        <div style={{width:"100%",maxWidth:420}}>
-          <div style={{textAlign:"center",marginBottom:36}}>
-            <div style={{fontFamily:"'Bebas Neue'",fontSize:52,letterSpacing:4,color:"#00e5a0"}}>CRICPRO</div>
-            <div style={{fontSize:12,color:"#6b7280",letterSpacing:3,marginTop:4}}>CRICKET MANAGEMENT PLATFORM</div>
+    <div style={{minHeight:"100vh",background:"#0a0e1a",display:"flex"}}>
+
+      {/* ── Left: form ── */}
+      <div style={{width:460,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",padding:"28px 36px",overflowY:"auto",position:"relative",zIndex:10,background:"#0a0e1aee"}}>
+        <div style={{width:"100%"}}>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontFamily:"'Bebas Neue'",fontSize:50,letterSpacing:4,color:"#00e5a0",lineHeight:1}}>CRICPRO</div>
+            <div style={{fontSize:10,color:"#6b7280",letterSpacing:3,marginTop:3}}>CRICKET MANAGEMENT PLATFORM</div>
           </div>
 
-          {/* Tabs */}
-          <div style={{display:"flex",background:"#111827",borderRadius:10,padding:4,marginBottom:24}}>
+          {/* Mode tabs */}
+          <div style={{display:"flex",background:"#111827",borderRadius:10,padding:4,marginBottom:18}}>
             {["login","signup"].map(m=>(
-              <button key={m} onClick={()=>{setMode(m);setError("");}} style={{flex:1,padding:"10px",border:"none",borderRadius:8,background:mode===m?"#0d1221":"transparent",color:mode===m?"#00e5a0":"#6b7280",fontFamily:"'DM Sans'",fontWeight:700,fontSize:13,cursor:"pointer",textTransform:"capitalize",transition:"all .2s"}}>
+              <button key={m} onClick={()=>{setMode(m);setError("");setFieldErrors({});setSignupStep(1);}} style={{flex:1,padding:"9px",border:"none",borderRadius:8,background:mode===m?"#0d1221":"transparent",color:mode===m?"#00e5a0":"#6b7280",fontFamily:"'DM Sans'",fontWeight:700,fontSize:13,cursor:"pointer",transition:"all .2s"}}>
                 {m==="login"?"Sign In":"Create Account"}
               </button>
             ))}
           </div>
 
-          {error&&<div style={{background:"#ff6b6b15",border:"1px solid #ff6b6b30",borderRadius:8,padding:"10px 14px",color:"#ff6b6b",fontSize:13,marginBottom:16}}>{error}</div>}
+          {error&&<div style={{background:"#ff6b6b15",border:"1px solid #ff6b6b30",borderRadius:8,padding:"9px 13px",color:"#ff6b6b",fontSize:13,marginBottom:12}}>{error}</div>}
 
+          {/* LOGIN */}
           {mode==="login"&&(
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <input placeholder="Email address" value={form.email||""} onChange={sf("email")} type="email"/>
-              <div style={{position:"relative"}}>
-                <input placeholder="Password" value={form.password||""} onChange={sf("password")} type={showPass?"text":"password"} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
-                <button onClick={()=>setShowPass(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#6b7280",cursor:"pointer"}}>
-                  {showPass?"🙈":"👁"}
-                </button>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div>
+                <input placeholder="Email address" value={form.email||""} onChange={sf("email")} type="email" style={inp("email")} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+                <Err k="email"/>
               </div>
-              <button className="btn-primary" style={{padding:14,fontSize:15}} onClick={handleLogin}>Sign In →</button>
-              <div style={{textAlign:"center",fontSize:13,color:"#6b7280"}}>Don't have an account? <span onClick={()=>setMode("signup")} style={{color:"#00e5a0",cursor:"pointer",fontWeight:600}}>Sign up free</span></div>
+              <div style={{position:"relative"}}>
+                <input placeholder="Password" value={form.password||""} onChange={sf("password")} type={showPass?"text":"password"} style={inp("password")} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+                <button onClick={()=>setShowPass(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#6b7280",cursor:"pointer"}}>{showPass?"🙈":"👁"}</button>
+              </div>
+              <button className="btn-primary" style={{padding:13,fontSize:15,marginTop:2}} onClick={handleLogin}>Sign In →</button>
+              <div style={{textAlign:"center",fontSize:13,color:"#6b7280",marginTop:2}}>No account? <span onClick={()=>{setMode("signup");setFieldErrors({});}} style={{color:"#00e5a0",cursor:"pointer",fontWeight:600}}>Sign up free →</span></div>
             </div>
           )}
 
+          {/* SIGNUP */}
           {mode==="signup"&&(
             <>
-              {signupStep===1&&(
-                <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                  <input placeholder="Full Name" value={form.name||""} onChange={sf("name")}/>
-                  <input placeholder="Email address" value={form.email||""} onChange={sf("email")} type="email"/>
-                  <div style={{position:"relative"}}>
-                    <input placeholder="Password (min 6 characters)" value={form.password||""} onChange={sf("password")} type={showPass?"text":"password"}/>
-                    <button onClick={()=>setShowPass(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#6b7280",cursor:"pointer"}}>{showPass?"🙈":"👁"}</button>
+              {/* Step pills */}
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                {[1,2].map((s,i)=>(
+                  <div key={s} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,background:signupStep>=s?"#00e5a0":"#1a2035",color:signupStep>=s?"#0a0e1a":"#6b7280",transition:"all .3s"}}>{s}</div>
+                    <span style={{fontSize:11,color:signupStep===s?"#e8eaf6":"#4b5563"}}>{s===1?"Details":"Plan"}</span>
+                    {i===0&&<div style={{width:24,height:2,background:signupStep>1?"#00e5a0":"#1a2035",borderRadius:2,transition:"all .3s"}}/>}
                   </div>
-                  <select value={form.role||ROLES.PLAYER} onChange={sf("role")}>
-                    <option value={ROLES.PLAYER}>Player</option>
-                    <option value={ROLES.SCORER}>Scorer / Umpire</option>
-                    <option value={ROLES.ORGANIZER}>Tournament Organizer</option>
-                    <option value={ROLES.VIEWER}>Fan / Viewer</option>
-                  </select>
-                  <button className="btn-primary" style={{padding:14}} onClick={()=>{if(!form.name||!form.email||!form.password)return setError("Fill all fields");setError("");setSignupStep(2);}}>Next — Choose Plan →</button>
-                  <div style={{textAlign:"center",fontSize:13,color:"#6b7280"}}>Already have an account? <span onClick={()=>setMode("login")} style={{color:"#00e5a0",cursor:"pointer",fontWeight:600}}>Sign in</span></div>
+                ))}
+              </div>
+
+              {signupStep===1&&(
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  <div>
+                    <input placeholder="Full Name" value={form.name||""} onChange={sf("name")} style={inp("name")}/>
+                    <Err k="name"/>
+                  </div>
+                  <div style={{marginTop:6}}>
+                    <input placeholder="Email — e.g. you@gmail.com" value={form.email||""} onChange={sf("email")} type="email" style={inp("email")}/>
+                    <Err k="email"/>
+                  </div>
+                  <div style={{marginTop:6,position:"relative"}}>
+                    <input placeholder="Password — min 6 characters" value={form.password||""} onChange={sf("password")} type={showPass?"text":"password"} style={inp("password")}/>
+                    <button onClick={()=>setShowPass(s=>!s)} style={{position:"absolute",right:12,top:13,background:"none",border:"none",color:"#6b7280",cursor:"pointer"}}>{showPass?"🙈":"👁"}</button>
+                    <Err k="password"/>
+                  </div>
+                  {/* Strength bar */}
+                  {form.password&&(
+                    <div style={{marginTop:2}}>
+                      <div style={{height:3,background:"#1a2035",borderRadius:2,overflow:"hidden"}}>
+                        <div style={{height:"100%",borderRadius:2,transition:"width .3s,background .3s",width:`${Math.min(form.password.length/10*100,100)}%`,background:form.password.length<6?"#ff6b6b":form.password.length<9?"#f59e0b":"#00e5a0"}}/>
+                      </div>
+                      <div style={{fontSize:10,marginTop:2,color:form.password.length<6?"#ff6b6b":form.password.length<9?"#f59e0b":"#00e5a0"}}>{form.password.length<6?"Weak":form.password.length<9?"Medium":"Strong"} password</div>
+                    </div>
+                  )}
+                  <div style={{marginTop:6}}>
+                    <select value={form.role||ROLES.PLAYER} onChange={sf("role")}>
+                      <option value={ROLES.PLAYER}>🏏 Player</option>
+                      <option value={ROLES.SCORER}>📋 Scorer / Umpire</option>
+                      <option value={ROLES.ORGANIZER}>🏆 Tournament Organizer</option>
+                      <option value={ROLES.VIEWER}>👁 Fan / Viewer</option>
+                    </select>
+                  </div>
+                  <button className="btn-primary" style={{padding:12,marginTop:10}} onClick={handleNextStep}>Next — Choose Plan →</button>
+                  <div style={{textAlign:"center",fontSize:13,color:"#6b7280",marginTop:4}}>Have an account? <span onClick={()=>{setMode("login");setFieldErrors({});}} style={{color:"#00e5a0",cursor:"pointer",fontWeight:600}}>Sign in</span></div>
                 </div>
               )}
+
               {signupStep===2&&(
                 <div>
-                  <div style={{marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
-                    <button onClick={()=>setSignupStep(1)} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:20}}>←</button>
-                    <span style={{fontWeight:600}}>Choose Your Plan</span>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                    <button onClick={()=>setSignupStep(1)} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:18,lineHeight:1}}>←</button>
+                    <span style={{fontWeight:600,fontSize:14}}>Choose Your Plan</span>
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:16}}>
-                    {[{plan:PLANS.FREE,label:"Free",price:"₹0/month",desc:"Basic access · View matches & stats",color:"#1a2035",border:"#2a3045"},{plan:PLANS.PRO,label:"Pro ★",price:"₹99/month",desc:"Full access · All Pro features unlocked",color:"#1a1500",border:"#f59e0b60"}].map(p=>(
-                      <div key={p.plan} onClick={()=>setForm(f=>({...f,plan:p.plan}))} style={{background:p.color,border:`2px solid ${form.plan===p.plan?p.plan===PLANS.PRO?"#f59e0b":"#00e5a0":p.border}`,borderRadius:12,padding:16,cursor:"pointer",transition:"all .2s"}}>
+                  <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
+                    {[{plan:PLANS.FREE,label:"Free",price:"₹0/mo",desc:"View matches, basic stats, 1 team",bg:"#111827",bdr:"#2a3045"},{plan:PLANS.PRO,label:"Pro ★",price:"₹99/mo",desc:"All features — charts, deep stats, unlimited",bg:"linear-gradient(135deg,#1a1500,#1a0d00)",bdr:"#f59e0b60"}].map(p=>(
+                      <div key={p.plan} onClick={()=>setForm(f=>({...f,plan:p.plan}))} style={{background:p.bg,border:`2px solid ${form.plan===p.plan?p.plan===PLANS.PRO?"#f59e0b":"#00e5a0":p.bdr}`,borderRadius:12,padding:14,cursor:"pointer",transition:"all .2s"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                          <div>
-                            <div style={{fontWeight:700,color:p.plan===PLANS.PRO?"#f59e0b":"#e8eaf6"}}>{p.label}</div>
-                            <div style={{fontSize:12,color:"#9ca3af",marginTop:2}}>{p.desc}</div>
-                          </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontFamily:"'Bebas Neue'",fontSize:20,color:p.plan===PLANS.PRO?"#f59e0b":"#e8eaf6"}}>{p.price}</div>
-                            {form.plan===p.plan&&<div style={{fontSize:11,color:p.plan===PLANS.PRO?"#f59e0b":"#00e5a0",fontWeight:700}}>✓ SELECTED</div>}
-                          </div>
+                          <div><div style={{fontWeight:700,color:p.plan===PLANS.PRO?"#f59e0b":"#e8eaf6"}}>{p.label}</div><div style={{fontSize:11,color:"#9ca3af",marginTop:2}}>{p.desc}</div></div>
+                          <div style={{textAlign:"right",flexShrink:0}}><div style={{fontFamily:"'Bebas Neue'",fontSize:18,color:p.plan===PLANS.PRO?"#f59e0b":"#e8eaf6"}}>{p.price}</div>{form.plan===p.plan&&<div style={{fontSize:10,color:p.plan===PLANS.PRO?"#f59e0b":"#00e5a0",fontWeight:700}}>✓ SELECTED</div>}</div>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <button style={{width:"100%",textAlign:"left",background:"none",border:"none",color:"#6b7280",fontSize:12,cursor:"pointer",marginBottom:16,padding:"4px 0"}} onClick={()=>setMode("pricing")}>See full feature comparison →</button>
-                  <button className={form.plan===PLANS.PRO?"btn-pro":"btn-primary"} style={{width:"100%",padding:14,fontSize:15}} onClick={handleSignup}>
-                    {form.plan===PLANS.PRO?"Start Pro Trial — ₹99/mo →":"Create Free Account →"}
+                  <button style={{width:"100%",textAlign:"left",background:"none",border:"none",color:"#6b7280",fontSize:12,cursor:"pointer",marginBottom:10,padding:"2px 0"}} onClick={()=>setMode("pricing")}>See full feature comparison →</button>
+                  <button className={form.plan===PLANS.PRO?"btn-pro":"btn-primary"} style={{width:"100%",padding:12,fontSize:14}} onClick={handleSignup}>
+                    {form.plan===PLANS.PRO?"Start Pro — ₹99/mo →":"Create Free Account →"}
                   </button>
                 </div>
               )}
             </>
           )}
 
-          {/* Demo accounts */}
+          {/* Demo quick login */}
           {mode==="login"&&(
-            <div style={{marginTop:28}}>
-              <div style={{fontSize:11,color:"#374151",textAlign:"center",marginBottom:12,textTransform:"uppercase",letterSpacing:1}}>Quick Demo Login</div>
-              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <div style={{marginTop:20}}>
+              <div style={{fontSize:10,color:"#374151",textAlign:"center",marginBottom:8,textTransform:"uppercase",letterSpacing:1.5}}>Quick Demo Login</div>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
                 {DEMO_USERS.map(u=>(
-                  <button key={u.id} onClick={()=>onLogin(u)} style={{background:"#0d1221",border:"1px solid #1a2035",borderRadius:10,padding:"10px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,transition:"border-color .2s",textAlign:"left"}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor="#00e5a040"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1a2035"}>
-                    <div className="avatar" style={{width:30,height:30,fontSize:11,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(u.name)+"30",color:avatarColor(u.name),fontWeight:700,flexShrink:0}}>{initials(u.name)}</div>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:12,fontWeight:600,color:"#e8eaf6"}}>{u.name}</div>
-                      <div style={{fontSize:10,color:"#4b5563"}}>{u.email}</div>
-                    </div>
-                    <div style={{display:"flex",gap:4,flexShrink:0}}>
+                  <button key={u.id} onClick={()=>onLogin(u)} style={{background:"#0d1221",border:"1px solid #1a2035",borderRadius:8,padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,transition:"border-color .2s",textAlign:"left"}}
+                    onMouseEnter={e=>e.currentTarget.style.borderColor="#00e5a050"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1a2035"}>
+                    <div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,background:avatarColor(u.name)+"30",color:avatarColor(u.name),flexShrink:0}}>{initials(u.name)}</div>
+                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:"#e8eaf6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div><div style={{fontSize:10,color:"#4b5563"}}>{u.email}</div></div>
+                    <div style={{display:"flex",gap:3,flexShrink:0}}>
                       <span className={`role-badge-${u.role}`}>{u.role.toUpperCase()}</span>
-                      {u.plan===PLANS.PRO&&<span className="tag-pro tag" style={{fontSize:9}}>PRO</span>}
+                      {u.plan===PLANS.PRO&&<span className="tag-pro tag" style={{fontSize:9,padding:"1px 5px"}}>PRO</span>}
                     </div>
                   </button>
                 ))}
@@ -481,27 +607,27 @@ function AuthPage({ users, setUsers, onLogin }) {
         </div>
       </div>
 
-      {/* Right panel — visual */}
-      <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40,background:"#0d1221",borderLeft:"1px solid #1a2035"}}>
-        <div style={{maxWidth:400,width:"100%"}}>
-          <div style={{fontFamily:"'Bebas Neue'",fontSize:32,marginBottom:24,color:"#fff",letterSpacing:1}}>EVERYTHING CRICKET NEEDS</div>
-          {[["🏏","Live Ball-by-Ball Scoring","Score matches in real-time with full stats"],["📊","Deep Player Analytics","Innings history, performance charts, trends"],["🏆","Tournament Management","Create leagues, generate fixtures, track points"],["👥","Team & Player Profiles","Full squad management with role-based access"],["🌿","Ground Booking","Manage venues, availability and scheduling"]].map(([icon,title,desc])=>(
-            <div key={title} style={{display:"flex",gap:14,marginBottom:20,alignItems:"flex-start"}}>
-              <div style={{fontSize:24,flexShrink:0,marginTop:2}}>{icon}</div>
-              <div><div style={{fontWeight:700,marginBottom:2}}>{title}</div><div style={{fontSize:13,color:"#6b7280"}}>{desc}</div></div>
+      {/* ── Right: Cricket animated background ── */}
+      <div style={{flex:1,position:"relative",overflow:"hidden",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <CricketBackground/>
+        <div style={{position:"relative",zIndex:10,padding:48,maxWidth:440,pointerEvents:"none"}}>
+          <div style={{fontFamily:"'Bebas Neue'",fontSize:12,letterSpacing:4,color:"#00e5a0",marginBottom:10,opacity:.85}}>INDIA'S #1 CRICKET PLATFORM</div>
+          <div style={{fontFamily:"'Bebas Neue'",fontSize:48,lineHeight:1,color:"#fff",marginBottom:24,letterSpacing:1,textShadow:"0 2px 20px rgba(0,0,0,.8)"}}>MANAGE.<br/>SCORE.<br/>ANALYSE.</div>
+          {[["🏏","Live Ball-by-Ball Scoring","Real-time scoring with full over-by-over stats"],["📊","Deep Player Analytics","Innings history, performance charts & trends"],["🏆","Tournament Management","Leagues, fixtures, standings — all in one place"],["👥","Role-Based Access","Admin, Organizer, Scorer, Player & Fan roles"]].map(([icon,title,desc])=>(
+            <div key={title} style={{display:"flex",gap:14,marginBottom:16,alignItems:"flex-start"}}>
+              <div style={{fontSize:20,flexShrink:0,marginTop:1}}>{icon}</div>
+              <div><div style={{fontWeight:700,fontSize:14,color:"#e8eaf6",textShadow:"0 1px 8px rgba(0,0,0,.8)"}}>{title}</div><div style={{fontSize:12,color:"#6b7280",marginTop:2}}>{desc}</div></div>
             </div>
           ))}
-          <div style={{marginTop:32,padding:16,background:"#111827",borderRadius:12,border:"1px solid #1a2035"}}>
-            <div style={{fontSize:12,color:"#6b7280",marginBottom:8}}>TRUSTED BY</div>
-            <div style={{fontFamily:"'Bebas Neue'",fontSize:28,color:"#00e5a0"}}>500+ CLUBS · 10,000+ PLAYERS</div>
-            <div style={{fontSize:12,color:"#4b5563",marginTop:4}}>Across India · Free to start</div>
+          <div style={{marginTop:24,padding:"14px 18px",background:"rgba(0,229,160,.07)",border:"1px solid #00e5a025",borderRadius:12}}>
+            <div style={{fontFamily:"'Bebas Neue'",fontSize:24,color:"#00e5a0",letterSpacing:1}}>500+ CLUBS · 10,000+ PLAYERS</div>
+            <div style={{fontSize:12,color:"#4b5563",marginTop:3}}>Across India · Free to start · No card needed</div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
 // ── INNINGS DETAIL DRILL-DOWN ──
 function InningsDetail({ player, innings, onBack, currentUser, onUpgrade }) {
   const [selectedInning, setSelectedInning] = useState(null);
@@ -805,9 +931,9 @@ export default function App() {
     notify("🎉 Welcome to CricPro Pro! All features unlocked.");
   };
 
-  const logout = () => { setCurrentUser(null); setTab("dashboard"); setDeepView(null); setScoringMatch(null); };
+  const logout = () => { setCurrentUser(null); setTab("dashboard"); setDeepView(null); setScoringMatch(null); try{sessionStorage.removeItem(SESSION_KEY)}catch(e){} };
 
-  if(!currentUser) return <AuthPage users={users} setUsers={setUsers} onLogin={u=>{setCurrentUser(u);notify(`Welcome, ${u.name}!`)}}/>;
+  if(!currentUser) return <AuthPage users={users} setUsers={setUsers} onLogin={u=>{setCurrentUser(u);try{sessionStorage.setItem(SESSION_KEY,JSON.stringify({userId:u.id,plan:u.plan}))}catch(e){}notify(`Welcome, ${u.name}!`)}}/>;
 
   if(showPricing) return <><PricingPage user={currentUser} onUpgrade={handleUpgrade} onClose={()=>setShowPricing(false)}/>{showPayment&&<PaymentModal user={currentUser} onSuccess={handleUpgradeSuccess} onClose={()=>setShowPayment(false)}/>}</>;
 
