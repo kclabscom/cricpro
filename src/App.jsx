@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabaseClient } from "./supabaseClient";
+import { TournamentsPage, GroundsPage, StatisticsPage, NotificationsCenter, FantasyCricketPage, LiveScoringDashboard, ExportsPage } from "./advancedFeatures";
 
 // ── Fonts ──
 const fl = document.createElement("link");
@@ -954,6 +955,10 @@ export default function App() {
   const [showPayment, setShowPayment] = useState(false);
   const [inningsData, setInningsData] = useState({});
   const [isLoading,   setIsLoading]   = useState(true);
+  const [notifications, setNotifications] = useState([]);
+  const [fantasyTeams, setFantasyTeams] = useState([]);
+  const [commentary, setCommentary] = useState([]);
+  const [exportedReports, setExportedReports] = useState([]);
 
   // ── Initialize data from Supabase on mount ──
   useEffect(()=>{
@@ -1106,6 +1111,10 @@ export default function App() {
     {id:"tournaments",icon:"🏆",label:"Tournaments"},
     {id:"grounds",icon:"🌿",label:"Grounds"},
     {id:"stats",icon:"📈",label:"Statistics"},
+    {id:"fantasy",icon:"⭐",label:"Fantasy"},
+    {id:"live",icon:"🔴",label:"Live"},
+    {id:"notifications",icon:"🔔",label:"Notifications"},
+    {id:"exports",icon:"📥",label:"Exports"},
     {id:"settings",icon:"👤",label:"My Account"},
     ...(currentUser.role===ROLES.ADMIN?[{id:"admin",icon:"⚙️",label:"Admin Panel"}]:[]),
   ];
@@ -1638,6 +1647,88 @@ export default function App() {
             setUsers={setUsers}
             notify={notify}
             logout={logout}
+            onUpgrade={handleUpgrade}
+          />
+        )}
+
+        {/* ── TOURNAMENTS ── */}
+        {tab==="tournaments"&&(
+          <TournamentsPage 
+            tournaments={tournaments} 
+            teams={teams} 
+            matches={matches} 
+            currentUser={currentUser}
+            canEditTournament={CAN.editTournament(currentUser.role)}
+            onAddTournament={(t) => { setTournaments(ts => [...ts, { id: uid(), ...t, createdBy: currentUser.id }]); notify("Tournament created!"); }}
+            DB={DB}
+            notify={notify}
+            uid={uid}
+            fmtDate={fmtDate}
+          />
+        )}
+
+        {/* ── GROUNDS ── */}
+        {tab==="grounds"&&(
+          <GroundsPage 
+            grounds={grounds} 
+            matches={matches} 
+            currentUser={currentUser}
+            canEditGround={CAN.editGround(currentUser.role)}
+            onAddGround={(g) => { setGrounds(gs => [...gs, { id: uid(), ...g }]); notify("Ground added!"); }}
+            notify={notify}
+            uid={uid}
+            fmtDate={fmtDate}
+          />
+        )}
+
+        {/* ── FANTASY CRICKET ── */}
+        {tab==="fantasy"&&(
+          <FantasyCricketPage 
+            matches={matches}
+            players={players}
+            currentUser={currentUser}
+            onCreateFantasyTeam={(matchId, playerIds, captainId) => {
+              setFantasyTeams(ft => [...ft, {id: uid(), match_id: matchId, creator_user_id: currentUser.id, players_selected: playerIds, captain_id: captainId, team_name: `${currentUser.name}'s Team`, status: "active", total_points: 0}]);
+              notify("Fantasy team created!");
+            }}
+            fantasyTeams={fantasyTeams}
+            isPro={isPro(currentUser)}
+            onUpgrade={handleUpgrade}
+          />
+        )}
+
+        {/* ── LIVE DASHBOARD ── */}
+        {tab==="live"&&(
+          <LiveScoringDashboard 
+            liveMatches={matches.filter(m => m.status === "live")}
+            currentUser={currentUser}
+            onOpenScorer={(m) => setScoringMatch(m)}
+            onAddCommentary={(matchId, text) => { setCommentary(c => [...c, {id: uid(), match_id: matchId, description: text, over_number: 0, created_at: new Date().toISOString()}]); notify("Commentary added!"); }}
+            commentary={commentary}
+          />
+        )}
+
+        {/* ── NOTIFICATIONS ── */}
+        {tab==="notifications"&&(
+          <NotificationsCenter 
+            userId={currentUser.id}
+            notifications={notifications}
+            onMarkAsRead={(nId) => { setNotifications(n => n.map(x => x.id === nId ? {...x, is_read: true} : x)); }}
+            onClearAll={() => { setNotifications([]); notify("All notifications cleared!"); }}
+          />
+        )}
+
+        {/* ── EXPORTS & REPORTS ── */}
+        {tab==="exports"&&(
+          <ExportsPage 
+            currentUser={currentUser}
+            exportedReports={exportedReports}
+            onExportReport={(reportType, format) => {
+              const report = {id: uid(), user_id: currentUser.id, report_type: reportType, format: format, title: `${reportType} Export (${format.toUpperCase()})`, file_url: "#", created_at: new Date().toISOString()};
+              setExportedReports(r => [...r, report]);
+              notify(`📥 ${reportType} exported as ${format.toUpperCase()}!`);
+            }}
+            isPro={isPro(currentUser)}
             onUpgrade={handleUpgrade}
           />
         )}
