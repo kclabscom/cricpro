@@ -153,82 +153,40 @@ function LineChart({ data, color="#00e5a0", label="" }) {
   );
 }
 
-// ── DEMO DATA ──
-const DEMO_USERS = [
-  {id:"u1",name:"Admin User",email:"admin@cricpro.com",password:"admin123",role:ROLES.ADMIN,plan:PLANS.PRO,team:null,joinedDate:"2025-01-01"},
-  {id:"u2",name:"Raj Organizer",email:"raj@cricpro.com",password:"raj123",role:ROLES.ORGANIZER,plan:PLANS.PRO,team:null,joinedDate:"2025-02-15"},
-  {id:"u3",name:"Scorer Dev",email:"scorer@cricpro.com",password:"scorer123",role:ROLES.SCORER,plan:PLANS.FREE,team:null,joinedDate:"2025-03-01"},
-  {id:"u4",name:"Virat Kumar",email:"virat@cricpro.com",password:"virat123",role:ROLES.PLAYER,plan:PLANS.FREE,team:"Royal Challengers",joinedDate:"2025-03-10"},
-  {id:"u5",name:"Rohit Singh",email:"rohit@cricpro.com",password:"rohit123",role:ROLES.PLAYER,plan:PLANS.PRO,team:"Mumbai Kings",joinedDate:"2025-03-12"},
-  {id:"u6",name:"Fan Viewer",email:"fan@cricpro.com",password:"fan123",role:ROLES.VIEWER,plan:PLANS.FREE,team:null,joinedDate:"2025-04-01"},
-];
-
-// Innings history per player (for drill-down)
-const INNINGS_DATA = {
-  p1: [ // Virat Kumar
-    {id:"i1",match:"RCB vs MKG",date:"2026-02-10",opponent:"Mumbai Kings",runs:87,balls:52,fours:9,sixes:3,sr:167.3,out:"Caught",bowler:"Bumrah Jr.",ground:"Eden Gardens"},
-    {id:"i2",match:"RCB vs SFC",date:"2026-02-03",opponent:"Sunrisers FC",runs:134,balls:89,fours:14,sixes:6,sr:150.6,out:"Not Out",bowler:"-",ground:"Wankhede Local"},
-    {id:"i3",match:"RCB vs CHL",date:"2026-01-28",opponent:"Chennai Lions",runs:23,balls:18,fours:3,sixes:0,sr:127.8,out:"Bowled",bowler:"Ravindra Jadav",ground:"Chinnaswamy Mini"},
-    {id:"i4",match:"RCB vs MKG",date:"2026-01-20",opponent:"Mumbai Kings",runs:67,balls:45,fours:7,sixes:2,sr:148.9,out:"LBW",bowler:"Hardik Dev",ground:"Eden Gardens"},
-    {id:"i5",match:"RCB vs SFC",date:"2026-01-15",opponent:"Sunrisers FC",runs:0,balls:1,fours:0,sixes:0,sr:0,out:"Bowled",bowler:"Warner Jr.",ground:"Chepauk Ground"},
-    {id:"i6",match:"RCB vs CHL",date:"2026-01-08",opponent:"Chennai Lions",runs:112,balls:71,fours:11,sixes:5,sr:157.7,out:"Caught",bowler:"Ravindra Jadav",ground:"Eden Gardens"},
-    {id:"i7",match:"RCB vs MKG",date:"2025-12-20",opponent:"Mumbai Kings",runs:45,balls:38,fours:4,sixes:1,sr:118.4,out:"Run Out",bowler:"-",ground:"Wankhede Local"},
-    {id:"i8",match:"RCB vs SFC",date:"2025-12-14",opponent:"Sunrisers FC",runs:78,balls:55,fours:8,sixes:2,sr:141.8,out:"Caught",bowler:"Warner Jr.",ground:"Eden Gardens"},
-  ],
-  p2: [
-    {id:"i1",match:"MKG vs RCB",date:"2026-02-10",opponent:"Royal Challengers",runs:52,balls:40,fours:6,sixes:1,sr:130,out:"Caught",bowler:"Jasprit Bhai",ground:"Eden Gardens"},
-    {id:"i2",match:"MKG vs SFC",date:"2026-02-03",opponent:"Sunrisers FC",runs:118,balls:82,fours:12,sixes:4,sr:143.9,out:"Not Out",bowler:"-",ground:"Wankhede Local"},
-    {id:"i3",match:"MKG vs CHL",date:"2026-01-28",opponent:"Chennai Lions",runs:34,balls:28,fours:3,sixes:0,sr:121.4,out:"Bowled",bowler:"Ravindra Jadav",ground:"Chinnaswamy Mini"},
-    {id:"i4",match:"MKG vs RCB",date:"2026-01-20",opponent:"Royal Challengers",runs:71,balls:50,fours:7,sixes:2,sr:142,out:"Caught",bowler:"Jasprit Bhai",ground:"Wankhede Local"},
-    {id:"i5",match:"MKG vs SFC",date:"2026-01-15",opponent:"Sunrisers FC",runs:88,balls:65,fours:9,sixes:3,sr:135.4,out:"Run Out",bowler:"-",ground:"Eden Gardens"},
-  ],
-  p3: [
-    {id:"i1",match:"RCB vs MKG",date:"2026-02-10",opponent:"Mumbai Kings",runs:8,balls:5,fours:1,sixes:0,sr:160,out:"Caught",bowler:"Bumrah Jr.",ground:"Eden Gardens",wickets:2,runsConceded:22,oversBowled:4},
-    {id:"i2",match:"RCB vs SFC",date:"2026-02-03",opponent:"Sunrisers FC",runs:0,balls:0,fours:0,sixes:0,sr:0,out:"DNB",bowler:"-",ground:"Wankhede Local",wickets:3,runsConceded:18,oversBowled:4},
-  ],
-  p4: [
-    {id:"i1",match:"CHL vs SFC",date:"2026-02-27",opponent:"Sunrisers FC",runs:68,balls:42,fours:6,sixes:4,sr:161.9,out:"Not Out",bowler:"-",ground:"Chinnaswamy Mini"},
-    {id:"i2",match:"CHL vs RCB",date:"2026-02-15",opponent:"Royal Challengers",runs:95,balls:58,fours:8,sixes:5,sr:163.8,out:"Caught",bowler:"Jasprit Bhai",ground:"Eden Gardens"},
-    {id:"i3",match:"CHL vs MKG",date:"2026-02-05",opponent:"Mumbai Kings",runs:44,balls:35,fours:4,sixes:2,sr:125.7,out:"LBW",bowler:"Hardik Dev",ground:"Wankhede Local"},
-  ],
+// ═══════════════════════════════════════════════════════════════
+// ── DATABASE LAYER (localStorage persistence) ──
+// All reads/writes go through DB.get / DB.set
+// Keys: cricpro_users | cricpro_teams | cricpro_players |
+//       cricpro_matches | cricpro_grounds | cricpro_tournaments |
+//       cricpro_session
+// ═══════════════════════════════════════════════════════════════
+const DB = {
+  KEYS: {
+    USERS:"cricpro_users", TEAMS:"cricpro_teams", PLAYERS:"cricpro_players",
+    MATCHES:"cricpro_matches", GROUNDS:"cricpro_grounds", TOURNAMENTS:"cricpro_tournaments",
+    SESSION:"cricpro_session", NOTIF_PREFS:"cricpro_notif_prefs",
+  },
+  get(key) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch(e) { console.error("DB.get error",key,e); return null; }
+  },
+  set(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+    catch(e) { console.error("DB.set error",key,e); return false; }
+  },
+  remove(key) { try { localStorage.removeItem(key); } catch(e) {} },
+  // Table helpers
+  getAll(key)          { return this.get(key) || []; },
+  saveAll(key, arr)    { return this.set(key, arr); },
+  insert(key, item)    { const arr=[...this.getAll(key),item]; this.saveAll(key,arr); return item; },
+  update(key, id, patch){ const arr=this.getAll(key).map(x=>x.id===id?{...x,...patch}:x); this.saveAll(key,arr); },
+  delete(key, id)      { this.saveAll(key, this.getAll(key).filter(x=>x.id!==id)); },
+  findById(key, id)    { return this.getAll(key).find(x=>x.id===id) || null; },
+  // Session
+  getSession()         { return this.get(this.KEYS.SESSION); },
+  setSession(userId)   { this.set(this.KEYS.SESSION, {userId, ts:Date.now()}); },
+  clearSession()       { this.remove(this.KEYS.SESSION); },
 };
-
-const TEAMS0 = [
-  {id:"t1",name:"Royal Challengers",short:"RCB",color:"#e83b3b",captain:"Virat Kumar",players:15,wins:8,losses:3,logo:"🔴",city:"Bangalore",founded:"2020",homeGround:"Eden Gardens Arena"},
-  {id:"t2",name:"Mumbai Kings",short:"MKG",color:"#1e90ff",captain:"Rohit Singh",players:14,wins:7,losses:4,logo:"🔵",city:"Mumbai",founded:"2019",homeGround:"Wankhede Local"},
-  {id:"t3",name:"Sunrisers FC",short:"SFC",color:"#ff9900",captain:"David Warner Jr.",players:13,wins:6,losses:5,logo:"🟡",city:"Hyderabad",founded:"2021",homeGround:"Chepauk Ground"},
-  {id:"t4",name:"Chennai Lions",short:"CHL",color:"#f7c900",captain:"MS Dhoni Jr.",players:15,wins:9,losses:2,logo:"🟡",city:"Chennai",founded:"2018",homeGround:"Chinnaswamy Mini"},
-];
-
-const PLAYERS0 = [
-  {id:"p1",name:"Virat Kumar",team:"Royal Challengers",role:"Batsman",matches:22,runs:780,avg:46.2,sr:142.1,wickets:0,economy:0,catches:8,fifties:6,hundreds:2,hs:134,ducks:1,balls_faced:548,fours:82,sixes:24,bio:"Aggressive right-hand batsman and captain of Royal Challengers."},
-  {id:"p2",name:"Rohit Singh",team:"Mumbai Kings",role:"Batsman",matches:20,runs:650,avg:38.5,sr:135.4,wickets:0,economy:0,catches:6,fifties:5,hundreds:1,hs:118,ducks:2,balls_faced:480,fours:70,sixes:18,bio:"Elegant opener known for big scores."},
-  {id:"p3",name:"Jasprit Bhai",team:"Royal Challengers",role:"Bowler",matches:22,runs:45,avg:8.1,sr:90.5,wickets:28,economy:7.2,catches:5,fifties:0,hundreds:0,hs:18,ducks:5,balls_faced:50,fours:3,sixes:1,bio:"Express pace bowler, death-over specialist."},
-  {id:"p4",name:"MS Dhoni Jr.",team:"Chennai Lions",role:"WK-Batsman",matches:25,runs:620,avg:52.0,sr:148.2,wickets:0,economy:0,catches:22,fifties:4,hundreds:1,hs:95,ducks:0,balls_faced:418,fours:55,sixes:28,bio:"Wicket-keeper batsman, cool-headed finisher."},
-  {id:"p5",name:"Ravindra Jadav",team:"Chennai Lions",role:"All-rounder",matches:20,runs:340,avg:28.3,sr:145.6,wickets:18,economy:7.8,catches:10,fifties:2,hundreds:0,hs:76,ducks:2,balls_faced:234,fours:30,sixes:12,bio:"Crafty left-arm spinner and capable batsman."},
-  {id:"p6",name:"David Warner Jr.",team:"Sunrisers FC",role:"Batsman",matches:18,runs:720,avg:44.5,sr:153.2,wickets:0,economy:0,catches:7,fifties:5,hundreds:2,hs:141,ducks:1,balls_faced:470,fours:88,sixes:30,bio:"Explosive left-handed opener."},
-  {id:"p7",name:"Hardik Dev",team:"Mumbai Kings",role:"All-rounder",matches:18,runs:310,avg:25.8,sr:152.4,wickets:15,economy:8.4,catches:8,fifties:1,hundreds:0,hs:67,ducks:3,balls_faced:203,fours:28,sixes:16,bio:"Hard-hitting all-rounder."},
-  {id:"p8",name:"Bumrah Jr.",team:"Mumbai Kings",role:"Bowler",matches:18,runs:20,avg:4.0,sr:66.7,wickets:24,economy:6.8,catches:4,fifties:0,hundreds:0,hs:12,ducks:6,balls_faced:30,fours:2,sixes:0,bio:"World-class death bowler with yorker mastery."},
-];
-
-const MATCHES0 = [
-  {id:"m1",team1:"Royal Challengers",team2:"Mumbai Kings",date:"2026-02-28",time:"19:00",ground:"Eden Gardens Arena",format:"T20",status:"live",score1:"142/4",overs1:"15.2",score2:"98/3",overs2:"12.0",innings:2,tournament:"City T20 Premier 2026",toss:"Royal Challengers won toss",mom:null,notes:"Exciting chase underway"},
-  {id:"m2",team1:"Chennai Lions",team2:"Sunrisers FC",date:"2026-02-27",time:"14:00",ground:"Chinnaswamy Mini",format:"T20",status:"completed",score1:"186/4",overs1:"20.0",score2:"179/8",overs2:"20.0",winner:"Chennai Lions",tournament:"City T20 Premier 2026",toss:"Chennai Lions won toss",mom:"MS Dhoni Jr.",notes:"Thriller — Chennai won by 7 runs"},
-  {id:"m3",team1:"Mumbai Kings",team2:"Sunrisers FC",date:"2026-03-02",time:"18:30",ground:"Wankhede Local",format:"T20",status:"upcoming",tournament:"City T20 Premier 2026"},
-  {id:"m4",team1:"Royal Challengers",team2:"Chennai Lions",date:"2026-03-04",time:"19:30",ground:"Eden Gardens Arena",format:"T20",status:"upcoming",tournament:"City T20 Premier 2026"},
-];
-
-const GROUNDS0 = [
-  {id:"g1",name:"Eden Gardens Arena",city:"Kolkata",capacity:5000,pitchType:"Batting",floodlights:true,status:"Available",facilities:["Pavilion","Parking","Cafeteria"],contact:"9800001111"},
-  {id:"g2",name:"Chinnaswamy Mini",city:"Bangalore",capacity:2000,pitchType:"Balanced",floodlights:true,status:"Booked",facilities:["Parking","Cafeteria"],contact:"9800002222",nextBooked:"2026-03-05"},
-  {id:"g3",name:"Wankhede Local",city:"Mumbai",capacity:3000,pitchType:"Pace",floodlights:false,status:"Available",facilities:["Pavilion","Dressing Rooms"],contact:"9800003333"},
-  {id:"g4",name:"Chepauk Ground",city:"Chennai",capacity:2500,pitchType:"Spin",floodlights:true,status:"Maintenance",facilities:["Pavilion","Parking"],contact:"9800004444"},
-];
-
-const TOURNAMENTS0 = [
-  {id:"tn1",name:"City T20 Premier 2026",format:"T20",teams:8,startDate:"2026-03-01",endDate:"2026-04-15",status:"Ongoing",registered:["Royal Challengers","Mumbai Kings","Sunrisers FC","Chennai Lions"],createdBy:"u2",prize:"₹50,000",description:"Premier city-level T20 tournament"},
-  {id:"tn2",name:"Club Cricket Championship",format:"50-Over",teams:16,startDate:"2026-05-01",endDate:"2026-07-01",status:"Upcoming",registered:["Royal Challengers","Chennai Lions"],createdBy:"u2",prize:"₹1,00,000",description:"Annual 50-over club championship"},
-];
 
 // ── PRICING PAGE ──
 function PricingPage({ user, onUpgrade, onClose }) {
@@ -405,29 +363,15 @@ function CricketBackground() {
 }
 
 // ── AUTH PAGE (Login + Signup) ──
-// Session key — persists across refresh within same browser tab session
-const SESSION_KEY = "cricpro_session_v1";
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function AuthPage({ users, setUsers, onLogin }) {
+function AuthPage({ onLogin }) {
   const [mode, setMode] = useState("login");
   const [form, setForm] = useState({role:ROLES.PLAYER,plan:PLANS.FREE});
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
   const [signupStep, setSignupStep] = useState(1);
-
-  // Restore session on page refresh
-  useEffect(()=>{
-    try {
-      const saved = sessionStorage.getItem(SESSION_KEY);
-      if(saved){
-        const {userId} = JSON.parse(saved);
-        const u = users.find(u=>u.id===userId);
-        if(u) onLogin(u);
-      }
-    } catch(e){}
-  },[]);// eslint-disable-line
 
   const sf = k => e => { setForm(f=>({...f,[k]:e.target.value})); setFieldErrors(fe=>({...fe,[k]:""})); setError(""); };
 
@@ -438,28 +382,39 @@ function AuthPage({ users, setUsers, onLogin }) {
   };
 
   const handleLogin = () => {
-    const ee = validateEmail(form.email);
+    const ee = validateEmail(form.email||"");
     if(ee) return setFieldErrors(fe=>({...fe,email:ee}));
-    const u = users.find(u=>u.email===form.email&&u.password===form.password);
+    if(!form.password) return setFieldErrors(fe=>({...fe,password:"Password is required"}));
+    const allUsers = DB.getAll(DB.KEYS.USERS);
+    const u = allUsers.find(u=>u.email.toLowerCase()===form.email.toLowerCase()&&u.password===form.password);
     if(u) onLogin(u);
-    else setError("Invalid email or password.");
+    else setError("Incorrect email or password. Please try again.");
   };
 
   const handleNextStep = () => {
     const errs = {};
     if(!form.name?.trim()) errs.name = "Full name is required";
-    const ee = validateEmail(form.email);
+    const ee = validateEmail(form.email||"");
     if(ee) errs.email = ee;
-    else if(users.find(u=>u.email===form.email)) errs.email = "Email already registered — sign in instead";
+    else {
+      const allUsers = DB.getAll(DB.KEYS.USERS);
+      if(allUsers.find(u=>u.email.toLowerCase()===form.email.toLowerCase())) errs.email = "Email already registered — sign in instead";
+    }
     if(!form.password) errs.password = "Password is required";
     else if(form.password.length<6) errs.password = "Minimum 6 characters required";
+    if(form.confirmPassword && form.password !== form.confirmPassword) errs.confirmPassword = "Passwords do not match";
     if(Object.keys(errs).length>0) return setFieldErrors(errs);
     setFieldErrors({}); setError(""); setSignupStep(2);
   };
 
   const handleSignup = () => {
-    const newUser = {id:uid(),name:form.name,email:form.email,password:form.password,role:form.role||ROLES.PLAYER,plan:form.plan||PLANS.FREE,team:null,joinedDate:new Date().toISOString().split("T")[0]};
-    setUsers(us=>[...us,newUser]);
+    const newUser = {
+      id:uid(), name:form.name.trim(), email:form.email.toLowerCase().trim(),
+      password:form.password, role:form.role||ROLES.PLAYER, plan:form.plan||PLANS.FREE,
+      team:null, joinedDate:new Date().toISOString().split("T")[0],
+      phone:"", city:"", bio:"",
+    };
+    DB.insert(DB.KEYS.USERS, newUser);
     onLogin(newUser);
   };
 
@@ -585,23 +540,10 @@ function AuthPage({ users, setUsers, onLogin }) {
             </>
           )}
 
-          {/* Demo quick login */}
+          {/* Dev hint */}
           {mode==="login"&&(
-            <div style={{marginTop:20}}>
-              <div style={{fontSize:10,color:"#374151",textAlign:"center",marginBottom:8,textTransform:"uppercase",letterSpacing:1.5}}>Quick Demo Login</div>
-              <div style={{display:"flex",flexDirection:"column",gap:4}}>
-                {DEMO_USERS.map(u=>(
-                  <button key={u.id} onClick={()=>onLogin(u)} style={{background:"#0d1221",border:"1px solid #1a2035",borderRadius:8,padding:"8px 12px",cursor:"pointer",display:"flex",alignItems:"center",gap:10,transition:"border-color .2s",textAlign:"left"}}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor="#00e5a050"} onMouseLeave={e=>e.currentTarget.style.borderColor="#1a2035"}>
-                    <div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,background:avatarColor(u.name)+"30",color:avatarColor(u.name),flexShrink:0}}>{initials(u.name)}</div>
-                    <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,fontWeight:600,color:"#e8eaf6",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.name}</div><div style={{fontSize:10,color:"#4b5563"}}>{u.email}</div></div>
-                    <div style={{display:"flex",gap:3,flexShrink:0}}>
-                      <span className={`role-badge-${u.role}`}>{u.role.toUpperCase()}</span>
-                      {u.plan===PLANS.PRO&&<span className="tag-pro tag" style={{fontSize:9,padding:"1px 5px"}}>PRO</span>}
-                    </div>
-                  </button>
-                ))}
-              </div>
+            <div style={{marginTop:14,padding:"8px 12px",background:"#0a0f1a",border:"1px solid #1a2035",borderRadius:8,textAlign:"center"}}>
+              <div style={{fontSize:11,color:"#374151"}}>🔧 Dev console: type <span style={{fontFamily:"monospace",color:"#00e5a040"}}>cricproDB()</span> to inspect stored data</div>
             </div>
           )}
         </div>
@@ -631,7 +573,7 @@ function AuthPage({ users, setUsers, onLogin }) {
 // ── INNINGS DETAIL DRILL-DOWN ──
 function InningsDetail({ player, innings, onBack, currentUser, onUpgrade }) {
   const [selectedInning, setSelectedInning] = useState(null);
-  const data = INNINGS_DATA[player.id] || [];
+  const data = (inningsData[player.id]||[]) || [];
 
   if(selectedInning) return (
     <div className="fadeIn">
@@ -691,7 +633,7 @@ function InningsDetail({ player, innings, onBack, currentUser, onUpgrade }) {
 
 // ── PERFORMANCE CHARTS ──
 function PerformanceCharts({ player, currentUser, onUpgrade }) {
-  const data = INNINGS_DATA[player.id] || [];
+  const data = (inningsData[player.id]||[]) || [];
   const runsData = data.slice(-8).map(d=>({val:d.runs,label:fmtDate(d.date).split(" ").slice(0,2).join(" ")}));
   const srData = data.filter(d=>d.balls>0).slice(-8).map(d=>({val:parseFloat(d.sr),label:fmtDate(d.date).split(" ").slice(0,2).join(" ")}));
 
@@ -731,7 +673,7 @@ function PerformanceCharts({ player, currentUser, onUpgrade }) {
 
 // ── ADVANCED ANALYSIS ──
 function AdvancedAnalysis({ player, currentUser, onUpgrade }) {
-  const data = INNINGS_DATA[player.id] || [];
+  const data = (inningsData[player.id]||[]) || [];
   const byOpponent = {};
   data.forEach(d=>{ if(!byOpponent[d.opponent])byOpponent[d.opponent]={runs:0,inns:0,balls:0}; byOpponent[d.opponent].runs+=d.runs; byOpponent[d.opponent].inns+=1; byOpponent[d.opponent].balls+=d.balls; });
   const vsOpponents = Object.entries(byOpponent).map(([k,v])=>({opponent:k,runs:v.runs,inns:v.inns,avg:(v.runs/v.inns).toFixed(1),sr:v.balls>0?((v.runs/v.balls)*100).toFixed(1):"—"}));
@@ -802,7 +744,7 @@ function PlayerProfile({ player, matches, teams, currentUser, onBack, onUpgrade,
 
   const tabs = [
     {id:"overview",label:"Overview"},
-    {id:"innings",label:`Innings (${(INNINGS_DATA[player.id]||[]).length})`,pro:true},
+    {id:"innings",label:`Innings (${((inningsData[player.id]||[])||[]).length})`,pro:true},
     {id:"charts",label:"Performance Charts",pro:true},
     {id:"analysis",label:"Advanced Analysis",pro:true},
   ];
@@ -896,27 +838,79 @@ function PlayerProfile({ player, matches, teams, currentUser, onBack, onUpgrade,
 
 // ── MAIN APP ──
 export default function App() {
+  // ── State: load from localStorage on mount ──
   const [currentUser, setCurrentUser] = useState(null);
-  const [users, setUsers] = useState(DEMO_USERS);
-  const [tab, setTab] = useState("dashboard");
-  const [teams, setTeams] = useState(TEAMS0);
-  const [players, setPlayers] = useState(PLAYERS0);
-  const [matches, setMatches] = useState(MATCHES0);
-  const [grounds, setGrounds] = useState(GROUNDS0);
-  const [tournaments, setTournaments] = useState(TOURNAMENTS0);
-  const [scoringMatch, setScoringMatch] = useState(null);
-  const [modal, setModal] = useState(null);
-  const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({});
-  const [notifs, setNotifs] = useState([]);
-  const [deepView, setDeepView] = useState(null);
+  const [users,       setUsers]       = useState(()=>DB.getAll(DB.KEYS.USERS));
+  const [teams,       setTeams]       = useState(()=>DB.getAll(DB.KEYS.TEAMS));
+  const [players,     setPlayers]     = useState(()=>DB.getAll(DB.KEYS.PLAYERS));
+  const [matches,     setMatches]     = useState(()=>DB.getAll(DB.KEYS.MATCHES));
+  const [grounds,     setGrounds]     = useState(()=>DB.getAll(DB.KEYS.GROUNDS));
+  const [tournaments, setTournaments] = useState(()=>DB.getAll(DB.KEYS.TOURNAMENTS));
+  const [tab,         setTab]         = useState("dashboard");
+  const [scoringMatch,setScoringMatch]= useState(null);
+  const [modal,       setModal]       = useState(null);
+  const [editItem,    setEditItem]    = useState(null);
+  const [form,        setForm]        = useState({});
+  const [notifs,      setNotifs]      = useState([]);
+  const [deepView,    setDeepView]    = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showPricing, setShowPricing] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [inningsData, setInningsData] = useState({});
 
-  const notify = (msg,type="success") => { const id=uid(); setNotifs(n=>[...n,{id,msg,type}]); setTimeout(()=>setNotifs(n=>n.filter(x=>x.id!==id)),3000); };
+  // ── Persist all state changes to localStorage ──
+  useEffect(()=>{ DB.saveAll(DB.KEYS.USERS, users); }, [users]);
+  useEffect(()=>{ DB.saveAll(DB.KEYS.TEAMS, teams); }, [teams]);
+  useEffect(()=>{ DB.saveAll(DB.KEYS.PLAYERS, players); }, [players]);
+  useEffect(()=>{ DB.saveAll(DB.KEYS.MATCHES, matches); }, [matches]);
+  useEffect(()=>{ DB.saveAll(DB.KEYS.GROUNDS, grounds); }, [grounds]);
+  useEffect(()=>{ DB.saveAll(DB.KEYS.TOURNAMENTS, tournaments); }, [tournaments]);
+
+  // ── Restore session on refresh ──
+  useEffect(()=>{
+    const sess = DB.getSession();
+    if(sess?.userId){
+      const allUsers = DB.getAll(DB.KEYS.USERS);
+      const u = allUsers.find(u=>u.id===sess.userId);
+      if(u){ setCurrentUser(u); setUsers(allUsers); }
+      else DB.clearSession();
+    }
+  }, []); // eslint-disable-line
+
+  // ── Expose DB inspector in browser console for debugging ──
+  useEffect(()=>{
+    window.cricproDB = () => {
+      const data = {
+        users:       DB.getAll(DB.KEYS.USERS).map(u=>({id:u.id,name:u.name,email:u.email,role:u.role,plan:u.plan,joinedDate:u.joinedDate})),
+        teams:       DB.getAll(DB.KEYS.TEAMS),
+        players:     DB.getAll(DB.KEYS.PLAYERS),
+        matches:     DB.getAll(DB.KEYS.MATCHES),
+        grounds:     DB.getAll(DB.KEYS.GROUNDS),
+        tournaments: DB.getAll(DB.KEYS.TOURNAMENTS),
+        session:     DB.getSession(),
+        localStorageKeys: Object.keys(localStorage).filter(k=>k.startsWith("cricpro")),
+      };
+      console.group("🏏 CricPro Database Inspector");
+      console.log("👤 Users     :", data.users.length, data.users);
+      console.log("🛡 Teams     :", data.teams.length, data.teams);
+      console.log("👥 Players   :", data.players.length, data.players);
+      console.log("🗓 Matches   :", data.matches.length, data.matches);
+      console.log("🌿 Grounds   :", data.grounds.length, data.grounds);
+      console.log("🏆 Tournaments:", data.tournaments.length, data.tournaments);
+      console.log("🔑 Session   :", data.session);
+      console.log("📦 Storage keys:", data.localStorageKeys);
+      console.groupEnd();
+      return data;
+    };
+    window.cricproReset = () => {
+      Object.keys(localStorage).filter(k=>k.startsWith("cricpro")).forEach(k=>localStorage.removeItem(k));
+      console.log("🗑 CricPro data cleared. Refresh to start fresh.");
+    };
+    console.log("🏏 CricPro loaded. Type cricproDB() to inspect data, cricproReset() to clear all data.");
+  }, []);
+
+  const notify = (msg,type="success") => { const id=uid(); setNotifs(n=>[...n,{id,msg,type}]); setTimeout(()=>setNotifs(n=>n.filter(x=>x.id!==id)),3500); };
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
   const closeModal = () => { setModal(null); setEditItem(null); setForm({}); };
   const openDeep = (type,item) => setDeepView({type,item});
@@ -924,16 +918,34 @@ export default function App() {
 
   const handleUpgrade = () => setShowPayment(true);
   const handleUpgradeSuccess = () => {
-    setCurrentUser(u=>({...u,plan:PLANS.PRO}));
-    setUsers(us=>us.map(u=>u.id===currentUser.id?{...u,plan:PLANS.PRO}:u));
-    setShowPayment(false);
-    setShowPricing(false);
+    const updated = {...currentUser, plan:PLANS.PRO};
+    setCurrentUser(updated);
+    setUsers(us=>us.map(u=>u.id===currentUser.id?updated:u));
+    DB.update(DB.KEYS.USERS, currentUser.id, {plan:PLANS.PRO});
+    setShowPayment(false); setShowPricing(false);
     notify("🎉 Welcome to CricPro Pro! All features unlocked.");
   };
 
-  const logout = () => { setCurrentUser(null); setTab("dashboard"); setDeepView(null); setScoringMatch(null); try{sessionStorage.removeItem(SESSION_KEY)}catch(e){} };
+  const logout = () => {
+    DB.clearSession();
+    setCurrentUser(null); setTab("dashboard"); setDeepView(null); setScoringMatch(null); setShowPricing(false); setShowPayment(false);
+  };
 
-  if(!currentUser) return <AuthPage users={users} setUsers={setUsers} onLogin={u=>{setCurrentUser(u);try{sessionStorage.setItem(SESSION_KEY,JSON.stringify({userId:u.id,plan:u.plan}))}catch(e){}notify(`Welcome, ${u.name}!`)}}/>;
+  const handleLogin = (u) => {
+    // Always re-read from DB to get latest user data
+    const fresh = DB.findById(DB.KEYS.USERS, u.id) || u;
+    setCurrentUser(fresh);
+    setUsers(DB.getAll(DB.KEYS.USERS));
+    setTeams(DB.getAll(DB.KEYS.TEAMS));
+    setPlayers(DB.getAll(DB.KEYS.PLAYERS));
+    setMatches(DB.getAll(DB.KEYS.MATCHES));
+    setGrounds(DB.getAll(DB.KEYS.GROUNDS));
+    setTournaments(DB.getAll(DB.KEYS.TOURNAMENTS));
+    DB.setSession(fresh.id);
+    notify(`Welcome back, ${fresh.name}! 👋`);
+  };
+
+  if(!currentUser) return <AuthPage onLogin={handleLogin}/>;
 
   if(showPricing) return <><PricingPage user={currentUser} onUpgrade={handleUpgrade} onClose={()=>setShowPricing(false)}/>{showPayment&&<PaymentModal user={currentUser} onSuccess={handleUpgradeSuccess} onClose={()=>setShowPayment(false)}/>}</>;
 
@@ -987,18 +999,33 @@ export default function App() {
             <div style={{fontSize:13,color:"#f59e0b",fontWeight:700,marginTop:6}}>₹99/month →</div>
           </div>
         )}
-        <div style={{padding:"12px 14px",borderTop:"1px solid #1a2035"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",borderRadius:8,padding:6,transition:"background .15s",background:tab==="settings"?"#00e5a010":"transparent"}} onClick={()=>{setTab("settings");closeDeep();}}>
-            <div style={{width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(currentUser.name)+"30",color:avatarColor(currentUser.name),fontWeight:700,fontSize:12,flexShrink:0,border:`2px solid ${tab==="settings"?"#00e5a0":"transparent"}`}}>{initials(currentUser.name)}</div>
+        {/* ── USER CARD + SIGN OUT ── */}
+        <div style={{borderTop:"1px solid #1a2035"}}>
+          {/* Account Settings link */}
+          <div
+            onClick={()=>{setTab("settings");closeDeep();}}
+            style={{display:"flex",alignItems:"center",gap:10,padding:sidebarOpen?"10px 14px":"10px",cursor:"pointer",transition:"background .15s",background:tab==="settings"?"#00e5a010":"transparent",borderLeft:`3px solid ${tab==="settings"?"#00e5a0":"transparent"}`}}>
+            <div style={{width:32,height:32,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(currentUser.name)+"30",color:avatarColor(currentUser.name),fontWeight:700,fontSize:12,flexShrink:0,border:`2px solid ${tab==="settings"?"#00e5a0":"#ffffff10"}`}}>
+              {initials(currentUser.name)}
+            </div>
             {sidebarOpen&&<div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{currentUser.name}</div>
-              <div style={{display:"flex",gap:4,marginTop:2}}>
+              <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",color:tab==="settings"?"#00e5a0":"#e8eaf6"}}>{currentUser.name}</div>
+              <div style={{display:"flex",gap:4,marginTop:2,flexWrap:"wrap"}}>
                 <span className={`role-badge-${currentUser.role}`}>{currentUser.role.toUpperCase()}</span>
                 {isPro(currentUser)&&<span className="tag-pro tag" style={{fontSize:9,padding:"1px 6px"}}>PRO</span>}
               </div>
             </div>}
-            {sidebarOpen&&<button onClick={e=>{e.stopPropagation();logout();}} title="Logout" style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:16}}>↩</button>}
           </div>
+          {/* Sign Out button — always visible */}
+          <button
+            onClick={logout}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:10,padding:sidebarOpen?"10px 14px":"11px",justifyContent:sidebarOpen?"flex-start":"center",background:"transparent",color:"#ff6b6b",border:"none",borderLeft:"3px solid transparent",borderTop:"1px solid #0f1623",cursor:"pointer",fontSize:13,fontWeight:600,fontFamily:"'DM Sans'",transition:"background .15s"}}
+            onMouseEnter={e=>e.currentTarget.style.background="#ff6b6b10"}
+            onMouseLeave={e=>e.currentTarget.style.background="transparent"}
+            title={!sidebarOpen?"Sign Out":""}>
+            <span style={{fontSize:sidebarOpen?15:20}}>🚪</span>
+            {sidebarOpen&&<span>Sign Out</span>}
+          </button>
         </div>
       </div>
 
@@ -1632,9 +1659,11 @@ function AccountSettings({ currentUser, setCurrentUser, users, setUsers, notify,
   const spf = k => e => setPwForm(f => ({ ...f, [k]: e.target.value }));
 
   const saveProfile = () => {
-    const updated = { ...currentUser, ...form };
+    const patch = { name:form.name.trim(), email:form.email.trim(), phone:form.phone, city:form.city, team:form.team, bio:form.bio };
+    const updated = { ...currentUser, ...patch };
     setCurrentUser(updated);
     setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
+    DB.update(DB.KEYS.USERS, currentUser.id, patch);
     setEditMode(false);
     notify("Profile updated successfully!");
   };
@@ -1646,6 +1675,7 @@ function AccountSettings({ currentUser, setCurrentUser, users, setUsers, notify,
     const updated = { ...currentUser, password: pwForm.newpw };
     setCurrentUser(updated);
     setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
+    DB.update(DB.KEYS.USERS, currentUser.id, {password:pwForm.newpw});
     setPwForm({ current:"", newpw:"", confirm:"" });
     setPwError("");
     notify("Password changed successfully!");
@@ -1655,8 +1685,9 @@ function AccountSettings({ currentUser, setCurrentUser, users, setUsers, notify,
     const updated = { ...currentUser, plan: PLANS.FREE };
     setCurrentUser(updated);
     setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
+    DB.update(DB.KEYS.USERS, currentUser.id, {plan:PLANS.FREE});
     setCancelModal(false);
-    notify(`Pro cancelled. Access continues until ${expiryDate}`, "error");
+    notify("Pro cancelled. Access continues until "+expiryDate, "error");
   };
 
   const STABS = [
