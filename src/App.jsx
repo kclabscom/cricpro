@@ -1172,7 +1172,7 @@ export default function App() {
       {/* Sidebar */}
       <div style={{width:sidebarOpen?220:64,background:"#0d1221",borderRight:"1px solid #1a2035",display:"flex",flexDirection:"column",position:"sticky",top:0,height:"100vh",transition:"width .25s",overflow:"hidden",flexShrink:0}}>
         <div style={{padding:"18px 14px",borderBottom:"1px solid #1a2035",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          {sidebarOpen&&<div><div style={{fontFamily:"'Bebas Neue'",fontSize:24,letterSpacing:2,color:"#00e5a0"}}>CRICPRO</div><div style={{fontSize:9,color:"#4b5563",letterSpacing:2}}>CRICKET MGMT</div></div>}
+          {sidebarOpen&&<div onClick={()=>{setTab("dashboard");closeDeep();}} style={{cursor:"pointer",flex:1}}><div style={{fontFamily:"'Bebas Neue'",fontSize:24,letterSpacing:2,color:"#00e5a0"}}>CRICPRO</div><div style={{fontSize:9,color:"#4b5563",letterSpacing:2}}>CRICKET MGMT</div></div>}
           <button onClick={()=>setSidebarOpen(s=>!s)} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:18,padding:4}}>☰</button>
         </div>
         {liveMatch&&sidebarOpen&&(
