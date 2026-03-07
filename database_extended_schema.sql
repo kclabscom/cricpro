@@ -1,6 +1,10 @@
 -- Extended Database Schema for CricPro with Advanced Features
 -- Run this after the basic setup to add Tournaments, Grounds, Stats, Notifications, Fantasy Cricket, etc.
 
+-- ========== ENSURE USERS TABLE HAS ID COLUMN ==========
+-- Verify users table exists and has required structure
+ALTER TABLE users ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+
 -- ========== TOURNAMENTS & LEAGUES ==========
 CREATE TABLE IF NOT EXISTS tournaments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -10,16 +14,16 @@ CREATE TABLE IF NOT EXISTS tournaments (
   end_date DATE,
   format TEXT DEFAULT 'T20' CHECK (format IN ('Test', 'ODI', 'T20', 'T10', 'Custom')),
   status TEXT DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'ongoing', 'completed', 'cancelled')),
-  organizer_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  organizer_id TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 
 -- Tournament groups for league-based tournaments
 CREATE TABLE IF NOT EXISTS tournament_groups (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+  tournament_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  teams UUID[] DEFAULT ARRAY[]::UUID[],
+  teams TEXT[] DEFAULT ARRAY[]::TEXT[],
   description TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
@@ -27,9 +31,9 @@ CREATE TABLE IF NOT EXISTS tournament_groups (
 -- Leaderboard standings
 CREATE TABLE IF NOT EXISTS leaderboards (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
-  team_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-  group_id UUID REFERENCES tournament_groups(id) ON DELETE SET NULL,
+  tournament_id TEXT NOT NULL,
+  team_id TEXT NOT NULL,
+  group_id TEXT,
   matches_played INTEGER DEFAULT 0,
   matches_won INTEGER DEFAULT 0,
   matches_lost INTEGER DEFAULT 0,
@@ -56,7 +60,7 @@ CREATE TABLE IF NOT EXISTS grounds (
   longitude DECIMAL(11,8),
   contact_person TEXT,
   contact_phone TEXT,
-  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_by TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 
@@ -64,8 +68,8 @@ CREATE TABLE IF NOT EXISTS grounds (
 -- Head-to-head team statistics
 CREATE TABLE IF NOT EXISTS head_to_head_stats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  team_a_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-  team_b_id UUID NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+  team_a_id TEXT NOT NULL,
+  team_b_id TEXT NOT NULL,
   matches_played INTEGER DEFAULT 0,
   team_a_wins INTEGER DEFAULT 0,
   team_b_wins INTEGER DEFAULT 0,
@@ -80,7 +84,7 @@ CREATE TABLE IF NOT EXISTS head_to_head_stats (
 -- Player format-specific career statistics
 CREATE TABLE IF NOT EXISTS player_format_stats (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  player_id TEXT NOT NULL,
   format TEXT NOT NULL CHECK (format IN ('Test', 'ODI', 'T20', 'T10', 'Domestic')),
   matches_played INTEGER DEFAULT 0,
   innings_played INTEGER DEFAULT 0,
@@ -101,20 +105,20 @@ CREATE TABLE IF NOT EXISTS player_format_stats (
 -- ========== COMMENTARY & REAL-TIME UPDATES ==========
 CREATE TABLE IF NOT EXISTS match_commentary (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  match_id TEXT NOT NULL,
   over_number DECIMAL(4,1),
   comment_type TEXT DEFAULT 'general' CHECK (comment_type IN ('general', 'wicket', 'boundary', 'milestone', 'alert')),
   description TEXT NOT NULL,
   runs_scored INTEGER DEFAULT 0,
-  commentator_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  commentator_id TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 
 -- Live scoring dashboard snapshots
 CREATE TABLE IF NOT EXISTS live_score_updates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
-  batting_team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
+  match_id TEXT NOT NULL,
+  batting_team_id TEXT,
   current_score INTEGER DEFAULT 0,
   wickets_lost INTEGER DEFAULT 0,
   overs_bowled DECIMAL(4,1) DEFAULT 0,
@@ -124,12 +128,12 @@ CREATE TABLE IF NOT EXISTS live_score_updates (
 -- ========== NOTIFICATIONS & ALERTS ==========
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
   notification_type TEXT NOT NULL CHECK (notification_type IN ('match_reminder', 'score_update', 'team_update', 'tournament_update', 'comment_notification', 'system')),
   title TEXT NOT NULL,
   message TEXT NOT NULL,
-  related_match_id UUID REFERENCES matches(id) ON DELETE SET NULL,
-  related_team_id UUID REFERENCES teams(id) ON DELETE SET NULL,
+  related_match_id TEXT,
+  related_team_id TEXT,
   is_read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT now()
 );
@@ -137,7 +141,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 -- User notification preferences
 CREATE TABLE IF NOT EXISTS notification_preferences (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL UNIQUE,
   match_reminders BOOLEAN DEFAULT TRUE,
   score_updates BOOLEAN DEFAULT TRUE,
   team_updates BOOLEAN DEFAULT TRUE,
@@ -149,12 +153,12 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 -- ========== FANTASY CRICKET ==========
 CREATE TABLE IF NOT EXISTS fantasy_teams (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  creator_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  creator_user_id TEXT NOT NULL,
+  match_id TEXT NOT NULL,
   team_name TEXT NOT NULL,
-  players_selected UUID[] DEFAULT ARRAY[]::UUID[], -- Array of player IDs
-  captain_id UUID REFERENCES players(id) ON DELETE SET NULL,
-  vice_captain_id UUID REFERENCES players(id) ON DELETE SET NULL,
+  players_selected TEXT[] DEFAULT ARRAY[]::TEXT[], -- Array of player IDs
+  captain_id TEXT,
+  vice_captain_id TEXT,
   total_points INTEGER DEFAULT 0,
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'active', 'locked', 'completed')),
   created_at TIMESTAMP DEFAULT now()
@@ -163,9 +167,9 @@ CREATE TABLE IF NOT EXISTS fantasy_teams (
 -- Fantasy points record per player per match
 CREATE TABLE IF NOT EXISTS fantasy_player_points (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  fantasy_team_id UUID NOT NULL REFERENCES fantasy_teams(id) ON DELETE CASCADE,
-  player_id UUID NOT NULL REFERENCES players(id) ON DELETE CASCADE,
-  match_id UUID NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+  fantasy_team_id TEXT NOT NULL,
+  player_id TEXT NOT NULL,
+  match_id TEXT NOT NULL,
   base_points INTEGER DEFAULT 0,
   runs_points DECIMAL(6,2) DEFAULT 0,
   wickets_points DECIMAL(6,2) DEFAULT 0,
@@ -180,23 +184,23 @@ CREATE TABLE IF NOT EXISTS fantasy_player_points (
 -- ========== EXPORTED REPORTS ==========
 CREATE TABLE IF NOT EXISTS exported_reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
   report_type TEXT NOT NULL CHECK (report_type IN ('player_stats', 'team_stats', 'tournament_summary', 'match_scorecard', 'leaderboard', 'custom')),
   title TEXT NOT NULL,
   format TEXT DEFAULT 'pdf' CHECK (format IN ('pdf', 'xlsx', 'csv')),
   file_url TEXT,
-  entity_id UUID, -- Can reference match, player, team, or tournament
+  entity_id TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 
 -- ========== STREAMING & COMMENTARY LINKS ==========
 CREATE TABLE IF NOT EXISTS match_streams (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  match_id UUID NOT NULL UNIQUE REFERENCES matches(id) ON DELETE CASCADE,
+  match_id TEXT NOT NULL UNIQUE,
   stream_url TEXT,
   platform TEXT DEFAULT 'youtube' CHECK (platform IN ('youtube', 'twitch', 'custom', 'facebook')),
   is_live BOOLEAN DEFAULT FALSE,
-  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_by TEXT,
   created_at TIMESTAMP DEFAULT now()
 );
 

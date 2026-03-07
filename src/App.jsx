@@ -1575,7 +1575,7 @@ export default function App() {
             matches={matches} 
             currentUser={currentUser}
             canEditTournament={CAN.editTournament(currentUser.role)}
-            onAddTournament={(t) => { setTournaments(ts => [...ts, { id: uid(), ...t, createdBy: currentUser.id }]); notify("Tournament created!"); }}
+            onAddTournament={async(t) => { const id = uid(); await DB.insert(DB.KEYS.TOURNAMENTS, { id, ...t, createdBy: currentUser.id }); setTournaments(ts => [...ts, { id, ...t, createdBy: currentUser.id }]); notify("Tournament created!"); }}
             DB={DB}
             notify={notify}
             uid={uid}
@@ -1590,7 +1590,7 @@ export default function App() {
             matches={matches} 
             currentUser={currentUser}
             canEditGround={CAN.editGround(currentUser.role)}
-            onAddGround={(g) => { setGrounds(gs => [...gs, { id: uid(), ...g }]); notify("Ground added!"); }}
+            onAddGround={async(g) => { const id = uid(); await DB.insert(DB.KEYS.GROUNDS, { id, ...g }); setGrounds(gs => [...gs, { id, ...g }]); notify("Ground added!"); }}
             notify={notify}
             uid={uid}
             fmtDate={fmtDate}
@@ -1704,7 +1704,7 @@ export default function App() {
                 <input placeholder="Captain Name" value={form.captain||""} onChange={sf("captain")}/>
                 <div className="grid-2"><input placeholder="City" value={form.city||""} onChange={sf("city")}/><input placeholder="Founded Year" value={form.founded||""} onChange={sf("founded")}/></div>
                 <div className="grid-2"><input placeholder="Team Color (#hex)" value={form.color||""} onChange={sf("color")}/><input type="number" placeholder="Players" value={form.players||""} onChange={sf("players")}/></div>
-                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={()=>{if(!form.name)return notify("Name required","error");setTeams(ts=>[...ts,{id:uid(),wins:0,losses:0,players:parseInt(form.players)||11,...form}]);closeModal();notify("Team added!");}}>Add</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
+                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={async()=>{if(!form.name)return notify("Name required","error");const newId=uid();const teamData={id:newId,wins:0,losses:0,players:parseInt(form.players)||11,...form};await DB.insert(DB.KEYS.TEAMS,teamData);setTeams(ts=>[...ts,teamData]);closeModal();notify("Team added!");}}>Add</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
               </div>
             </>}
             {modal==="addPlayer"&&<>
@@ -1728,7 +1728,7 @@ export default function App() {
                 <div className="grid-3"><input type="number" placeholder="Matches" value={form.matches||""} onChange={sf("matches")}/><input type="number" placeholder="Runs" value={form.runs||""} onChange={sf("runs")}/><input type="number" placeholder="Avg" value={form.avg||""} onChange={sf("avg")}/></div>
                 <div className="grid-3"><input type="number" placeholder="Strike Rate" value={form.sr||""} onChange={sf("sr")}/><input type="number" placeholder="Wickets" value={form.wickets||""} onChange={sf("wickets")}/><input type="number" placeholder="Economy" value={form.economy||""} onChange={sf("economy")}/></div>
                 <div className="grid-3"><input type="number" placeholder="Fifties" value={form.fifties||""} onChange={sf("fifties")}/><input type="number" placeholder="Hundreds" value={form.hundreds||""} onChange={sf("hundreds")}/><input type="number" placeholder="Catches" value={form.catches||""} onChange={sf("catches")}/></div>
-                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={()=>{if(!form.name)return notify("Required","error");const d={...form,matches:+form.matches||0,runs:+form.runs||0,avg:+form.avg||0,sr:+form.sr||0,wickets:+form.wickets||0,economy:+form.economy||0,catches:+form.catches||0,fifties:+form.fifties||0,hundreds:+form.hundreds||0,hs:+form.hs||0,ducks:+form.ducks||0,balls_faced:+form.balls_faced||0,fours:+form.fours||0,sixes:+form.sixes||0};if(editItem){setPlayers(ps=>ps.map(p=>p.id===editItem.id?{...p,...d}:p));notify("Updated!");}else{setPlayers(ps=>[...ps,{id:uid(),...d}]);notify("Added!");}closeModal();}}>Save</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
+                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={async()=>{if(!form.name)return notify("Required","error");const d={...form,matches:+form.matches||0,runs:+form.runs||0,avg:+form.avg||0,sr:+form.sr||0,wickets:+form.wickets||0,economy:+form.economy||0,catches:+form.catches||0,fifties:+form.fifties||0,hundreds:+form.hundreds||0,hs:+form.hs||0,ducks:+form.ducks||0,balls_faced:+form.balls_faced||0,fours:+form.fours||0,sixes:+form.sixes||0};if(editItem){await DB.update(DB.KEYS.PLAYERS,editItem.id,d);setPlayers(ps=>ps.map(p=>p.id===editItem.id?{...p,...d}:p));notify("Updated!");}else{const newId=uid();await DB.insert(DB.KEYS.PLAYERS,{id:newId,...d});setPlayers(ps=>[...ps,{id:newId,...d}]);notify("Added!");}closeModal();}}>Save</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
               </div>
             </>}
             {modal==="addMatch"&&<>
@@ -1739,7 +1739,7 @@ export default function App() {
                 <div className="grid-2"><select value={form.format||"T20"} onChange={sf("format")}>{["T20","50-Over","Test","T10"].map(f=><option key={f}>{f}</option>)}</select><select value={form.ground||""} onChange={sf("ground")}><option value="">Select Ground</option>{grounds.filter(g=>g.status!=="Maintenance").map(g=><option key={g.id}>{g.name}</option>)}</select></div>
                 <select value={form.tournament||""} onChange={sf("tournament")}><option value="">No Tournament</option>{tournaments.map(t=><option key={t.id}>{t.name}</option>)}</select>
                 <input placeholder="Notes (optional)" value={form.notes||""} onChange={sf("notes")}/>
-                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={()=>{if(!form.team1||!form.team2)return notify("Select both teams","error");setMatches(ms=>[...ms,{id:uid(),status:"upcoming",innings:1,...form}]);closeModal();notify("Scheduled!");}}>Schedule</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
+                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={async()=>{if(!form.team1||!form.team2)return notify("Select both teams","error");const newId=uid();const matchData={id:newId,status:"upcoming",innings:1,...form};await DB.insert(DB.KEYS.MATCHES,matchData);setMatches(ms=>[...ms,matchData]);closeModal();notify("Scheduled!");}}>Schedule</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
               </div>
             </>}
             {modal==="addTournament"&&<>
@@ -1752,7 +1752,7 @@ export default function App() {
                 <div className="grid-2"><input placeholder="Prize (e.g. ₹50,000)" value={form.prize||""} onChange={sf("prize")}/><select value={form.status||"Upcoming"} onChange={sf("status")}>{["Upcoming","Ongoing","Completed"].map(s=><option key={s}>{s}</option>)}</select></div>
                 <div style={{fontSize:12,color:"#6b7280"}}>Register Teams:</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{teams.map(t=>{const sel=(form.registered||[]).includes(t.name);return <button key={t.id} onClick={()=>setForm(f=>({...f,registered:sel?(f.registered||[]).filter(x=>x!==t.name):[...(f.registered||[]),t.name]}))} style={{background:sel?"#00e5a0":"#111827",color:sel?"#0a0e1a":"#9ca3af",border:`1px solid ${sel?"#00e5a0":"#1a2035"}`,borderRadius:6,padding:"6px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{t.logo} {t.name}</button>;})}</div>
-                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={()=>{if(!form.name)return notify("Name required","error");setTournaments(ts=>[...ts,{id:uid(),registered:[],createdBy:currentUser.id,...form,teams:parseInt(form.teams)||8}]);closeModal();notify("Created!");}}>Create</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
+                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={async()=>{if(!form.name)return notify("Name required","error");const newId=uid();const tourData={id:newId,registered:[],createdBy:currentUser.id,...form,teams:parseInt(form.teams)||8};await DB.insert(DB.KEYS.TOURNAMENTS,tourData);setTournaments(ts=>[...ts,tourData]);closeModal();notify("Created!");}}>Create</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
               </div>
             </>}
             {modal==="addGround"&&<>
@@ -1762,7 +1762,7 @@ export default function App() {
                 <div className="grid-2"><input placeholder="City" value={form.city||""} onChange={sf("city")}/><input type="number" placeholder="Capacity" value={form.capacity||""} onChange={sf("capacity")}/></div>
                 <div className="grid-2"><select value={form.pitchType||"Balanced"} onChange={sf("pitchType")}>{["Batting","Bowling","Balanced","Pace","Spin"].map(p=><option key={p}>{p}</option>)}</select><select value={form.floodlights||"true"} onChange={sf("floodlights")}><option value="true">Floodlights ✓</option><option value="false">No Floodlights</option></select></div>
                 <div className="grid-2"><input placeholder="Contact Number" value={form.contact||""} onChange={sf("contact")}/><select value={form.status||"Available"} onChange={sf("status")}>{["Available","Booked","Maintenance"].map(s=><option key={s}>{s}</option>)}</select></div>
-                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={()=>{if(!form.name)return notify("Name required","error");setGrounds(gs=>[...gs,{id:uid(),floodlights:form.floodlights!=="false",capacity:parseInt(form.capacity)||1000,facilities:[],...form}]);closeModal();notify("Added!");}}>Add</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
+                <div style={{display:"flex",gap:10,marginTop:8}}><button className="btn-primary" style={{flex:1}} onClick={async()=>{if(!form.name)return notify("Name required","error");const newId=uid();const groundData={id:newId,floodlights:form.floodlights!=="false",capacity:parseInt(form.capacity)||1000,facilities:[],...form};await DB.insert(DB.KEYS.GROUNDS,groundData);setGrounds(gs=>[...gs,groundData]);closeModal();notify("Added!");}}>Add</button><button className="btn-ghost" onClick={closeModal}>Cancel</button></div>
               </div>
             </>}
             {modal==="addUser"&&<>
