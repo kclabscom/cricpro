@@ -429,6 +429,7 @@ function AuthPage({ onLogin }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [showPass, setShowPass] = useState(false);
   const [signupStep, setSignupStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const sf = k => e => { setForm(f=>({...f,[k]:e.target.value})); setFieldErrors(fe=>({...fe,[k]:""})); setError(""); };
 
@@ -438,24 +439,41 @@ function AuthPage({ onLogin }) {
     return "";
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const ee = validateEmail(form.email||"");
     if(ee) return setFieldErrors(fe=>({...fe,email:ee}));
     if(!form.password) return setFieldErrors(fe=>({...fe,password:"Password is required"}));
-    const allUsers = DB.getAll(DB.KEYS.USERS);
-    const u = allUsers.find(u=>u.email.toLowerCase()===form.email.toLowerCase()&&u.password===form.password);
-    if(u) onLogin(u);
-    else setError("Incorrect email or password. Please try again.");
+    
+    setLoading(true);
+    setError("");
+    try {
+      const allUsers = await DB.getAll(DB.KEYS.USERS);
+      const u = allUsers.find(u=>u.email?.toLowerCase()===form.email.toLowerCase()&&u.password===form.password);
+      if(u) {
+        await onLogin(u);
+      } else {
+        setError("Incorrect email or password. Please try again.");
+      }
+    } catch(e) {
+      console.error("Login error:", e);
+      setError("Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     const errs = {};
     if(!form.name?.trim()) errs.name = "Full name is required";
     const ee = validateEmail(form.email||"");
     if(ee) errs.email = ee;
     else {
-      const allUsers = DB.getAll(DB.KEYS.USERS);
-      if(allUsers.find(u=>u.email.toLowerCase()===form.email.toLowerCase())) errs.email = "Email already registered — sign in instead";
+      try {
+        const allUsers = await DB.getAll(DB.KEYS.USERS);
+        if(allUsers.find(u=>u.email?.toLowerCase()===form.email.toLowerCase())) errs.email = "Email already registered — sign in instead";
+      } catch(e) {
+        errs.email = "Error checking email availability";
+      }
     }
     if(!form.password) errs.password = "Password is required";
     else if(form.password.length<6) errs.password = "Minimum 6 characters required";
@@ -464,15 +482,31 @@ function AuthPage({ onLogin }) {
     setFieldErrors({}); setError(""); setSignupStep(2);
   };
 
-  const handleSignup = () => {
-    const newUser = {
-      id:uid(), name:form.name.trim(), email:form.email.toLowerCase().trim(),
-      password:form.password, role:form.role||ROLES.PLAYER, plan:form.plan||PLANS.FREE,
-      team:null, joinedDate:new Date().toISOString().split("T")[0],
-      phone:"", city:"", bio:"",
-    };
-    DB.insert(DB.KEYS.USERS, newUser);
-    onLogin(newUser);
+  const handleSignup = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const newUser = {
+        id:uid(), 
+        name:form.name.trim(), 
+        email:form.email.toLowerCase().trim(),
+        password:form.password, 
+        role:form.role||ROLES.PLAYER, 
+        plan:form.plan||PLANS.FREE,
+        team:null, 
+        joined_date:new Date().toISOString().split("T")[0],
+        phone:"", 
+        city:"", 
+        bio:"",
+      };
+      await DB.insert(DB.KEYS.USERS, newUser);
+      await onLogin(newUser);
+    } catch(e) {
+      console.error("Signup error:", e);
+      setError("Signup failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const Err = ({k}) => fieldErrors[k]
@@ -509,15 +543,17 @@ function AuthPage({ onLogin }) {
           {mode==="login"&&(
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               <div>
-                <input placeholder="Email address" value={form.email||""} onChange={sf("email")} type="email" style={inp("email")} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+                <input placeholder="Email address" value={form.email||""} onChange={sf("email")} type="email" style={inp("email")} onKeyDown={e=>e.key==="Enter"&&!loading&&handleLogin()} disabled={loading}/>
                 <Err k="email"/>
               </div>
               <div style={{position:"relative"}}>
-                <input placeholder="Password" value={form.password||""} onChange={sf("password")} type={showPass?"text":"password"} style={inp("password")} onKeyDown={e=>e.key==="Enter"&&handleLogin()}/>
+                <input placeholder="Password" value={form.password||""} onChange={sf("password")} type={showPass?"text":"password"} style={inp("password")} onKeyDown={e=>e.key==="Enter"&&!loading&&handleLogin()} disabled={loading}/>
                 <button onClick={()=>setShowPass(s=>!s)} style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",color:"#6b7280",cursor:"pointer"}}>{showPass?"🙈":"👁"}</button>
               </div>
-              <button className="btn-primary" style={{padding:13,fontSize:15,marginTop:2}} onClick={handleLogin}>Sign In →</button>
-              <div style={{textAlign:"center",fontSize:13,color:"#6b7280",marginTop:2}}>No account? <span onClick={()=>{setMode("signup");setFieldErrors({});}} style={{color:"#00e5a0",cursor:"pointer",fontWeight:600}}>Sign up free →</span></div>
+              <button className="btn-primary" style={{padding:13,fontSize:15,marginTop:2,opacity:loading?0.6:1}} onClick={handleLogin} disabled={loading}>
+                {loading?`⏳ Logging in...`:`Sign In →`}
+              </button>
+              <div style={{textAlign:"center",fontSize:13,color:"#6b7280",marginTop:2}}>No account? <span onClick={()=>{setMode("signup");setFieldErrors({});}} style={{color:"#00e5a0",cursor:loading?"not-allowed":"pointer",fontWeight:600,opacity:loading?0.5:1}}>{loading?"Please wait...":"Sign up free →"}</span></div>
             </div>
           )}
 
@@ -567,8 +603,10 @@ function AuthPage({ onLogin }) {
                       <option value={ROLES.VIEWER}>👁 Fan / Viewer</option>
                     </select>
                   </div>
-                  <button className="btn-primary" style={{padding:12,marginTop:10}} onClick={handleNextStep}>Next — Choose Plan →</button>
-                  <div style={{textAlign:"center",fontSize:13,color:"#6b7280",marginTop:4}}>Have an account? <span onClick={()=>{setMode("login");setFieldErrors({});}} style={{color:"#00e5a0",cursor:"pointer",fontWeight:600}}>Sign in</span></div>
+                  <button className="btn-primary" style={{padding:12,marginTop:10,opacity:loading?0.6:1}} onClick={handleNextStep} disabled={loading}>
+                    {loading?`⏳ Validating...`:`Next — Choose Plan →`}
+                  </button>
+                  <div style={{textAlign:"center",fontSize:13,color:"#6b7280",marginTop:4}}>Have an account? <span onClick={()=>{!loading&&setMode("login");setFieldErrors({});}} style={{color:"#00e5a0",cursor:loading?"not-allowed":"pointer",fontWeight:600,opacity:loading?0.5:1}}>Sign in</span></div>
                 </div>
               )}
 
@@ -589,8 +627,8 @@ function AuthPage({ onLogin }) {
                     ))}
                   </div>
                   <button style={{width:"100%",textAlign:"left",background:"none",border:"none",color:"#6b7280",fontSize:12,cursor:"pointer",marginBottom:10,padding:"2px 0"}} onClick={()=>setMode("pricing")}>See full feature comparison →</button>
-                  <button className={form.plan===PLANS.PRO?"btn-pro":"btn-primary"} style={{width:"100%",padding:12,fontSize:14}} onClick={handleSignup}>
-                    {form.plan===PLANS.PRO?"Start Pro — ₹99/mo →":"Create Free Account →"}
+                  <button className={form.plan===PLANS.PRO?"btn-pro":"btn-primary"} style={{width:"100%",padding:12,fontSize:14,opacity:loading?0.6:1}} onClick={handleSignup} disabled={loading}>
+                    {loading?`⏳ Creating account...`:(form.plan===PLANS.PRO?"Start Pro — ₹99/mo →":"Create Free Account →")}
                   </button>
                 </div>
               )}
