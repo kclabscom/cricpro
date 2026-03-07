@@ -76,6 +76,7 @@ const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
 const fmtDate = d => d ? new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "—";
 const initials = n => n ? n.split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,2) : "??";
 const avatarColor = n => { const c=["#00e5a0","#60a5fa","#f59e0b","#a78bfa","#fb923c","#f472b6"]; let h=0; for(let ch of(n||""))h=ch.charCodeAt(0)+((h<<5)-h); return c[Math.abs(h)%c.length]; };
+const PlayerAvatar = ({player, size=28}) => player?.profile_picture ? <img src={player.profile_picture} alt={player.name} style={{width:size,height:size,borderRadius:"50%",objectFit:"cover",border:`2px solid ${avatarColor(player.name)}`}}/> : <div style={{width:size,height:size,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.35,fontWeight:700,background:avatarColor(player.name)+"25",color:avatarColor(player.name)}}>{initials(player.name)}</div>;
 
 // ── ROLES & PLANS ──
 const ROLES = { ADMIN:"admin", ORGANIZER:"organizer", SCORER:"scorer", PLAYER:"player", VIEWER:"viewer" };
@@ -853,7 +854,7 @@ function PlayerProfile({ player, matches, teams, currentUser, onBack, onUpgrade,
       <div className="card" style={{padding:28,marginBottom:20,position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:0,right:0,width:200,height:200,background:avatarColor(player.name),opacity:.05,borderRadius:"0 0 0 200px"}}/>
         <div style={{display:"flex",alignItems:"flex-start",gap:20}}>
-          <div style={{width:72,height:72,fontSize:26,borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",background:avatarColor(player.name)+"25",color:avatarColor(player.name),fontWeight:700,flexShrink:0}}>{initials(player.name)}</div>
+          <PlayerAvatar player={player} size={72}/>
           <div style={{flex:1}}>
             <div style={{fontFamily:"'Bebas Neue'",fontSize:34,letterSpacing:1}}>{player.name}</div>
             <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
@@ -1250,7 +1251,7 @@ export default function App() {
                       {[...players].filter(filter).sort((a,b)=>b[key]-a[key]).slice(0,5).map((p,i)=>(
                         <tr key={p.id} className="clickable-row" onClick={()=>{setTab("players");openDeep("player",p);}}>
                           <td style={{color:i===0?"#f59e0b":"#4b5563",fontFamily:"'Bebas Neue'",fontSize:16}}>{i+1}</td>
-                          <td style={{fontWeight:600}}>{p.name}</td>
+                          <td style={{fontWeight:600,display:"flex",alignItems:"center",gap:8}}><PlayerAvatar player={p} size={24}/>{p.name}</td>
                           {cols.map(([l,k2])=><td key={l} style={{color:l===cols[0][0]?col:"#e8eaf6",fontWeight:l===cols[0][0]?700:400,fontFamily:"'JetBrains Mono'"}}>{p[k2]}</td>)}
                         </tr>
                       ))}
@@ -1282,7 +1283,7 @@ export default function App() {
                     {players.filter(p=>!searchQuery||p.name.toLowerCase().includes(searchQuery.toLowerCase())||p.team.toLowerCase().includes(searchQuery.toLowerCase())).map((p,i)=>(
                       <tr key={p.id} className="clickable-row" onClick={()=>openDeep("player",p)}>
                         <td style={{color:"#6b7280"}}>{i+1}</td>
-                        <td><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,background:avatarColor(p.name)+"25",color:avatarColor(p.name)}}>{initials(p.name)}</div><span style={{fontWeight:700}}>{p.name}</span>{currentUser.name===p.name&&<span style={{fontSize:10,color:"#00e5a0"}}>(you)</span>}</div></td>
+                        <td><div style={{display:"flex",alignItems:"center",gap:8}}><PlayerAvatar player={p} size={28}/><span style={{fontWeight:700}}>{p.name}</span>{currentUser.name===p.name&&<span style={{fontSize:10,color:"#00e5a0"}}>(you)</span>}</div></td>
                         <td style={{fontSize:12,color:"#9ca3af"}}>{p.team}</td>
                         <td><span className={`tag ${p.role==="Batsman"?"tag-blue":p.role==="Bowler"?"tag-red":p.role.includes("WK")?"tag-yellow":"tag-purple"}`} style={{fontSize:10}}>{p.role}</span></td>
                         <td>{p.matches}</td>
@@ -1340,7 +1341,7 @@ export default function App() {
                     {players.filter(p=>p.team===tname).map(p=>(
                       <div key={p.id} className="card-click" style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #0f1623"}} onClick={()=>{setTab("players");openDeep("player",p);}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,background:avatarColor(p.name)+"25",color:avatarColor(p.name)}}>{initials(p.name)}</div>
+                          <PlayerAvatar player={p} size={26}/>
                           <span style={{fontWeight:600,fontSize:13}}>{p.name}</span>
                         </div>
                         <span className={`tag ${p.role==="Batsman"?"tag-blue":p.role==="Bowler"?"tag-red":"tag-purple"}`} style={{fontSize:10}}>{p.role}</span>
@@ -1409,7 +1410,7 @@ export default function App() {
                     {players.filter(p=>p.team===deepView.item.name).map((p,i)=>(
                       <tr key={p.id} className="clickable-row" onClick={()=>{setTab("players");openDeep("player",p);}}>
                         <td style={{color:"#6b7280"}}>{i+1}</td>
-                        <td><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:26,height:26,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,background:avatarColor(p.name)+"25",color:avatarColor(p.name)}}>{initials(p.name)}</div><span style={{fontWeight:600}}>{p.name}</span>{deepView.item.captain===p.name&&<span>👑</span>}</div></td>
+                        <td><div style={{display:"flex",alignItems:"center",gap:8}}><PlayerAvatar player={p} size={26}/><span style={{fontWeight:600}}>{p.name}</span>{deepView.item.captain===p.name&&<span>👑</span>}</div></td>
                         <td><span className={`tag ${p.role==="Batsman"?"tag-blue":p.role==="Bowler"?"tag-red":p.role.includes("WK")?"tag-yellow":"tag-purple"}`} style={{fontSize:10}}>{p.role}</span></td>
                         <td>{p.matches}</td><td style={{color:"#00e5a0",fontWeight:700}}>{p.runs}</td><td style={{fontFamily:"'JetBrains Mono'"}}>{p.avg}</td><td style={{color:"#60a5fa",fontWeight:700}}>{p.wickets}</td>
                       </tr>
@@ -1794,7 +1795,19 @@ export default function App() {
             {modal==="addPlayer"&&<>
               <div style={{fontFamily:"'Bebas Neue'",fontSize:22,marginBottom:20}}>{editItem?"EDIT PLAYER":"ADD PLAYER"}</div>
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                <input placeholder="Player Name" value={form.name||""} onChange={sf("name")}/>
+                <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                  <div style={{flex:1}}>
+                    <input placeholder="Player Name" value={form.name||""} onChange={sf("name")}/>
+                  </div>
+                  <div style={{width:80,height:80,borderRadius:10,background:"#111827",display:"flex",alignItems:"center",justifyContent:"center",border:"2px dashed #1a2035",flexShrink:0,overflow:"hidden"}}>
+                    {form.profile_picture ? (
+                      <img src={form.profile_picture} alt="Profile" style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                    ) : (
+                      <div style={{fontSize:40}}>{form.role==="Bowler"?"🎳":form.role==="All-rounder"?"🌟":"🏏"}</div>
+                    )}
+                  </div>
+                </div>
+                <input type="file" accept="image/*" onChange={(e)=>{if(e.target.files[0]){const reader=new FileReader();reader.onload=rr=>setForm(f=>({...f,profile_picture:rr.target.result}));reader.readAsDataURL(e.target.files[0]);}}} style={{padding:"8px",background:"#111827",border:"1px solid #1a2035",borderRadius:8,cursor:"pointer"}} placeholder="Upload Photo"/>
                 <div className="grid-2"><select value={form.team||""} onChange={sf("team")}><option value="">Select Team</option>{teams.map(t=><option key={t.id}>{t.name}</option>)}</select><select value={form.role||"Batsman"} onChange={sf("role")}>{["Batsman","Bowler","All-rounder","WK-Batsman"].map(r=><option key={r}>{r}</option>)}</select></div>
                 <textarea placeholder="Player bio" value={form.bio||""} onChange={sf("bio")} rows={2}/>
                 <div className="grid-3"><input type="number" placeholder="Matches" value={form.matches||""} onChange={sf("matches")}/><input type="number" placeholder="Runs" value={form.runs||""} onChange={sf("runs")}/><input type="number" placeholder="Avg" value={form.avg||""} onChange={sf("avg")}/></div>
