@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { supabaseClient } from "./supabaseClient";
 
 // ── Fonts ──
 const fl = document.createElement("link");
@@ -154,38 +155,94 @@ function LineChart({ data, color="#00e5a0", label="" }) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ── DATABASE LAYER (localStorage persistence) ──
-// All reads/writes go through DB.get / DB.set
-// Keys: cricpro_users | cricpro_teams | cricpro_players |
-//       cricpro_matches | cricpro_grounds | cricpro_tournaments |
-//       cricpro_session
+// ── DATABASE LAYER (Supabase) ──
+// All reads/writes go through Supabase
 // ═══════════════════════════════════════════════════════════════
 const DB = {
+  // Users
+  async getAll(table) {
+    try {
+      if (table === "users") return await supabaseClient.getUsers();
+      if (table === "teams") return await supabaseClient.getTeams();
+      if (table === "players") return await supabaseClient.getPlayers();
+      if (table === "matches") return await supabaseClient.getMatches();
+      if (table === "grounds") return await supabaseClient.getGrounds();
+      if (table === "tournaments") return await supabaseClient.getTournaments();
+      return [];
+    } catch(e) { console.error("DB.getAll error", table, e); return []; }
+  },
+
+  async saveAll(table, arr) {
+    // Note: Supabase doesn't support bulk upsert via this pattern
+    // This is handled via individual insert/update calls
+    return true;
+  },
+
+  async insert(table, item) {
+    try {
+      if (table === "users") return await supabaseClient.addTeam(item);
+      if (table === "teams") return await supabaseClient.addTeam(item);
+      if (table === "players") return await supabaseClient.addPlayer(item);
+      if (table === "matches") return await supabaseClient.addMatch(item);
+      if (table === "grounds") return await supabaseClient.addGround(item);
+      if (table === "tournaments") return await supabaseClient.addTournament(item);
+      return item;
+    } catch(e) { console.error("DB.insert error", table, e); return null; }
+  },
+
+  async update(table, id, patch) {
+    try {
+      if (table === "users") return await supabaseClient.updateUser(id, patch);
+      if (table === "teams") return await supabaseClient.updateTeam(id, patch);
+      if (table === "players") return await supabaseClient.updatePlayer(id, patch);
+      if (table === "matches") return await supabaseClient.updateMatch(id, patch);
+      if (table === "grounds") return await supabaseClient.updateGround(id, patch);
+      if (table === "tournaments") return await supabaseClient.updateTournament(id, patch);
+      return null;
+    } catch(e) { console.error("DB.update error", table, id, e); return null; }
+  },
+
+  async delete(table, id) {
+    try {
+      if (table === "users") return await supabaseClient.deleteTeam(id);
+      if (table === "teams") return await supabaseClient.deleteTeam(id);
+      if (table === "players") return await supabaseClient.deletePlayer(id);
+      if (table === "matches") return await supabaseClient.deleteMatch(id);
+      if (table === "grounds") return await supabaseClient.deleteGround(id);
+      if (table === "tournaments") return await supabaseClient.deleteTournament(id);
+      return true;
+    } catch(e) { console.error("DB.delete error", table, id, e); return false; }
+  },
+
+  async findById(table, id) {
+    try {
+      const all = await this.getAll(table);
+      return all.find(x => x.id === id) || null;
+    } catch(e) { console.error("DB.findById error", table, id, e); return null; }
+  },
+
+  // Session (stored in localStorage for now)
+  getSession() {
+    try { const v = localStorage.getItem("cricpro_session"); return v ? JSON.parse(v) : null; }
+    catch(e) { return null; }
+  },
+  
+  setSession(userId) {
+    try { localStorage.setItem("cricpro_session", JSON.stringify({userId, ts:Date.now()})); }
+    catch(e) {}
+  },
+  
+  clearSession() {
+    try { localStorage.removeItem("cricpro_session"); }
+    catch(e) {}
+  },
+
+  // Table keys for compatibility
   KEYS: {
-    USERS:"cricpro_users", TEAMS:"cricpro_teams", PLAYERS:"cricpro_players",
-    MATCHES:"cricpro_matches", GROUNDS:"cricpro_grounds", TOURNAMENTS:"cricpro_tournaments",
-    SESSION:"cricpro_session", NOTIF_PREFS:"cricpro_notif_prefs",
+    USERS:"users", TEAMS:"teams", PLAYERS:"players",
+    MATCHES:"matches", GROUNDS:"grounds", TOURNAMENTS:"tournaments",
+    SESSION:"session",
   },
-  get(key) {
-    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
-    catch(e) { console.error("DB.get error",key,e); return null; }
-  },
-  set(key, value) {
-    try { localStorage.setItem(key, JSON.stringify(value)); return true; }
-    catch(e) { console.error("DB.set error",key,e); return false; }
-  },
-  remove(key) { try { localStorage.removeItem(key); } catch(e) {} },
-  // Table helpers
-  getAll(key)          { return this.get(key) || []; },
-  saveAll(key, arr)    { return this.set(key, arr); },
-  insert(key, item)    { const arr=[...this.getAll(key),item]; this.saveAll(key,arr); return item; },
-  update(key, id, patch){ const arr=this.getAll(key).map(x=>x.id===id?{...x,...patch}:x); this.saveAll(key,arr); },
-  delete(key, id)      { this.saveAll(key, this.getAll(key).filter(x=>x.id!==id)); },
-  findById(key, id)    { return this.getAll(key).find(x=>x.id===id) || null; },
-  // Session
-  getSession()         { return this.get(this.KEYS.SESSION); },
-  setSession(userId)   { this.set(this.KEYS.SESSION, {userId, ts:Date.now()}); },
-  clearSession()       { this.remove(this.KEYS.SESSION); },
 };
 
 // ── PRICING PAGE ──
@@ -838,14 +895,14 @@ function PlayerProfile({ player, matches, teams, currentUser, onBack, onUpgrade,
 
 // ── MAIN APP ──
 export default function App() {
-  // ── State: load from localStorage on mount ──
+  // ── State: will load from Supabase via useEffect ──
   const [currentUser, setCurrentUser] = useState(null);
-  const [users,       setUsers]       = useState(()=>DB.getAll(DB.KEYS.USERS));
-  const [teams,       setTeams]       = useState(()=>DB.getAll(DB.KEYS.TEAMS));
-  const [players,     setPlayers]     = useState(()=>DB.getAll(DB.KEYS.PLAYERS));
-  const [matches,     setMatches]     = useState(()=>DB.getAll(DB.KEYS.MATCHES));
-  const [grounds,     setGrounds]     = useState(()=>DB.getAll(DB.KEYS.GROUNDS));
-  const [tournaments, setTournaments] = useState(()=>DB.getAll(DB.KEYS.TOURNAMENTS));
+  const [users,       setUsers]       = useState([]);
+  const [teams,       setTeams]       = useState([]);
+  const [players,     setPlayers]     = useState([]);
+  const [matches,     setMatches]     = useState([]);
+  const [grounds,     setGrounds]     = useState([]);
+  const [tournaments, setTournaments] = useState([]);
   const [tab,         setTab]         = useState("dashboard");
   const [scoringMatch,setScoringMatch]= useState(null);
   const [modal,       setModal]       = useState(null);
@@ -858,57 +915,70 @@ export default function App() {
   const [showPricing, setShowPricing] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [inningsData, setInningsData] = useState({});
+  const [isLoading,   setIsLoading]   = useState(true);
 
-  // ── Persist all state changes to localStorage ──
-  useEffect(()=>{ DB.saveAll(DB.KEYS.USERS, users); }, [users]);
-  useEffect(()=>{ DB.saveAll(DB.KEYS.TEAMS, teams); }, [teams]);
-  useEffect(()=>{ DB.saveAll(DB.KEYS.PLAYERS, players); }, [players]);
-  useEffect(()=>{ DB.saveAll(DB.KEYS.MATCHES, matches); }, [matches]);
-  useEffect(()=>{ DB.saveAll(DB.KEYS.GROUNDS, grounds); }, [grounds]);
-  useEffect(()=>{ DB.saveAll(DB.KEYS.TOURNAMENTS, tournaments); }, [tournaments]);
-
-  // ── Restore session on refresh ──
+  // ── Initialize data from Supabase on mount ──
   useEffect(()=>{
-    const sess = DB.getSession();
-    if(sess?.userId){
-      const allUsers = DB.getAll(DB.KEYS.USERS);
-      const u = allUsers.find(u=>u.id===sess.userId);
-      if(u){ setCurrentUser(u); setUsers(allUsers); }
-      else DB.clearSession();
-    }
-  }, []); // eslint-disable-line
-
-  // ── Expose DB inspector in browser console for debugging ──
-  useEffect(()=>{
-    window.cricproDB = () => {
-      const data = {
-        users:       DB.getAll(DB.KEYS.USERS).map(u=>({id:u.id,name:u.name,email:u.email,role:u.role,plan:u.plan,joinedDate:u.joinedDate})),
-        teams:       DB.getAll(DB.KEYS.TEAMS),
-        players:     DB.getAll(DB.KEYS.PLAYERS),
-        matches:     DB.getAll(DB.KEYS.MATCHES),
-        grounds:     DB.getAll(DB.KEYS.GROUNDS),
-        tournaments: DB.getAll(DB.KEYS.TOURNAMENTS),
-        session:     DB.getSession(),
-        localStorageKeys: Object.keys(localStorage).filter(k=>k.startsWith("cricpro")),
-      };
-      console.group("🏏 CricPro Database Inspector");
-      console.log("👤 Users     :", data.users.length, data.users);
-      console.log("🛡 Teams     :", data.teams.length, data.teams);
-      console.log("👥 Players   :", data.players.length, data.players);
-      console.log("🗓 Matches   :", data.matches.length, data.matches);
-      console.log("🌿 Grounds   :", data.grounds.length, data.grounds);
-      console.log("🏆 Tournaments:", data.tournaments.length, data.tournaments);
-      console.log("🔑 Session   :", data.session);
-      console.log("📦 Storage keys:", data.localStorageKeys);
-      console.groupEnd();
-      return data;
+    const loadData = async () => {
+      try {
+        const [u, t, p, m, g, tn] = await Promise.all([
+          DB.getAll(DB.KEYS.USERS),
+          DB.getAll(DB.KEYS.TEAMS),
+          DB.getAll(DB.KEYS.PLAYERS),
+          DB.getAll(DB.KEYS.MATCHES),
+          DB.getAll(DB.KEYS.GROUNDS),
+          DB.getAll(DB.KEYS.TOURNAMENTS),
+        ]);
+        setUsers(u);
+        setTeams(t);
+        setPlayers(p);
+        setMatches(m);
+        setGrounds(g);
+        setTournaments(tn);
+        
+        // Restore session
+        const sess = DB.getSession();
+        if(sess?.userId) {
+          const user = u.find(x => x.id === sess.userId);
+          if(user) setCurrentUser(user);
+          else DB.clearSession();
+        }
+      } catch(e) {
+        console.error("Failed to load data from Supabase:", e);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    window.cricproReset = () => {
-      Object.keys(localStorage).filter(k=>k.startsWith("cricpro")).forEach(k=>localStorage.removeItem(k));
-      console.log("🗑 CricPro data cleared. Refresh to start fresh.");
-    };
-    console.log("🏏 CricPro loaded. Type cricproDB() to inspect data, cricproReset() to clear all data.");
+    loadData();
   }, []);
+
+  // ── Expose debug inspector in browser console ──
+  useEffect(()=>{
+    window.cricproDB = async () => {
+      try {
+        const data = {
+          users:       users.map(u=>({id:u.id,name:u.name,email:u.email,role:u.role,plan:u.plan})),
+          teams:       teams,
+          players:     players,
+          matches:     matches,
+          grounds:     grounds,
+          tournaments: tournaments,
+          session:     DB.getSession(),
+        };
+        console.group("🏏 CricPro Database Inspector (Supabase)");
+        console.log("👤 Users     :", data.users.length, data.users);
+        console.log("🛡 Teams     :", data.teams.length, data.teams);
+        console.log("👥 Players   :", data.players.length, data.players);
+        console.log("🗓 Matches   :", data.matches.length, data.matches);
+        console.log("🌿 Grounds   :", data.grounds.length, data.grounds);
+        console.log("🏆 Tournaments:", data.tournaments.length, data.tournaments);
+        console.log("🔑 Session   :", data.session);
+        console.groupEnd();
+        return data;
+      } catch(e) { console.error("cricproDB error:", e); }
+    };
+    console.log("🏏 CricPro with Supabase loaded. Type cricproDB() to inspect data.");
+  }, [users, teams, players, matches, grounds, tournaments]);
 
   const notify = (msg,type="success") => { const id=uid(); setNotifs(n=>[...n,{id,msg,type}]); setTimeout(()=>setNotifs(n=>n.filter(x=>x.id!==id)),3500); };
   const sf = k => e => setForm(f=>({...f,[k]:e.target.value}));
@@ -931,18 +1001,37 @@ export default function App() {
     setCurrentUser(null); setTab("dashboard"); setDeepView(null); setScoringMatch(null); setShowPricing(false); setShowPayment(false);
   };
 
-  const handleLogin = (u) => {
-    // Always re-read from DB to get latest user data
-    const fresh = DB.findById(DB.KEYS.USERS, u.id) || u;
-    setCurrentUser(fresh);
-    setUsers(DB.getAll(DB.KEYS.USERS));
-    setTeams(DB.getAll(DB.KEYS.TEAMS));
-    setPlayers(DB.getAll(DB.KEYS.PLAYERS));
-    setMatches(DB.getAll(DB.KEYS.MATCHES));
-    setGrounds(DB.getAll(DB.KEYS.GROUNDS));
-    setTournaments(DB.getAll(DB.KEYS.TOURNAMENTS));
-    DB.setSession(fresh.id);
-    notify(`Welcome back, ${fresh.name}! 👋`);
+  const handleLogin = async (u) => {
+    // Reload from Supabase to get latest data
+    try {
+      const freshUser = await DB.findById(DB.KEYS.USERS, u.id);
+      if(!freshUser) {
+        notify("User not found in database", "error");
+        return;
+      }
+      
+      const [allUsers, allTeams, allPlayers, allMatches, allGrounds, allTournaments] = await Promise.all([
+        DB.getAll(DB.KEYS.USERS),
+        DB.getAll(DB.KEYS.TEAMS),
+        DB.getAll(DB.KEYS.PLAYERS),
+        DB.getAll(DB.KEYS.MATCHES),
+        DB.getAll(DB.KEYS.GROUNDS),
+        DB.getAll(DB.KEYS.TOURNAMENTS),
+      ]);
+      
+      setCurrentUser(freshUser);
+      setUsers(allUsers);
+      setTeams(allTeams);
+      setPlayers(allPlayers);
+      setMatches(allMatches);
+      setGrounds(allGrounds);
+      setTournaments(allTournaments);
+      DB.setSession(freshUser.id);
+      notify(`Welcome back, ${freshUser.name}! 👋`);
+    } catch(e) {
+      console.error("Login error:", e);
+      notify("Failed to login. Please try again.", "error");
+    }
   };
 
   if(!currentUser) return <AuthPage onLogin={handleLogin}/>;
@@ -953,6 +1042,20 @@ export default function App() {
 
   if(scoringMatch) return (
     <ScoringEngine match={scoringMatch} currentUser={currentUser} onClose={()=>setScoringMatch(null)}/>
+  );
+
+  // Show loading screen while fetching from Supabase
+  if(isLoading) return (
+    <div style={{minHeight:"100vh",background:"#0a0e1a",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:48,marginBottom:16}}>🏏</div>
+        <div style={{fontFamily:"'Bebas Neue'",fontSize:28,color:"#00e5a0",letterSpacing:2}}>CRICPRO</div>
+        <div style={{fontSize:13,color:"#6b7280",marginTop:12}}>Connecting to database...</div>
+        <div style={{marginTop:20,display:"flex",gap:6,justifyContent:"center"}}>
+          {[0,1,2].map(i=><div key={i} style={{width:8,height:8,borderRadius:"50%",background:"#00e5a0",animation:`pulse 1.5s infinite`,animationDelay:`${i*0.2}s`}}/>)}
+        </div>
+      </div>
+    </div>
   );
 
   const liveMatch = matches.find(m=>m.status==="live");
