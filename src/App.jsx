@@ -68,6 +68,50 @@ tr:last-child td{border-bottom:none}
 .chart-fill{position:absolute;bottom:0;left:0;right:0;border-radius:4px;transition:height .8s ease}
 .innings-row{cursor:pointer;transition:background .15s}.innings-row:hover{background:#0d2d20}
 .pro-banner{background:linear-gradient(135deg,#1a1500,#1a0a00);border:1px solid #f59e0b40;border-radius:12px;padding:20px;display:flex;align-items:center;gap:16px;margin-bottom:20px}
+@media (max-width: 768px) {
+  body{font-size:13px}
+  .grid-2{grid-template-columns:1fr}
+  .grid-3{grid-template-columns:1fr}
+  .modal{padding:20px;max-width:90vw}
+  .section-title{font-size:18px}
+  .btn-primary,.btn-ghost,.btn-pro,.btn-danger{min-height:44px;padding:12px 16px}
+  .stat-box .val{font-size:24px}
+  .stat-box .lbl{font-size:10px}
+  table{font-size:12px}
+  th{font-size:10px;padding:8px 10px}
+  td{padding:8px 10px}
+  input,select,textarea{font-size:13px;padding:8px 12px}
+  .tag{font-size:10px;padding:2px 8px}
+  .modal-overlay{padding:10px}
+}
+@media (max-width: 480px) {
+  body{font-size:12px}
+  .grid-2{grid-template-columns:1fr;gap:12px}
+  .grid-3{grid-template-columns:1fr;gap:12px}
+  .modal{padding:16px;max-width:95vw;border-radius:12px;max-height:85vh}
+  .section-title{font-size:16px;letter-spacing:.5px}
+  .btn-primary,.btn-ghost,.btn-pro,.btn-danger{min-height:40px;padding:10px 12px;font-size:12px}
+  .btn-primary:hover,.btn-pro:hover{transform:none}
+  .stat-box{padding:12px;cursor:default}
+  .stat-box:hover{border:1px solid #1a2035;background:#111827}
+  .stat-box .val{font-size:20px}
+  .stat-box .lbl{font-size:9px;margin-top:2px}
+  table{font-size:11px;overflow-x:auto;display:block}
+  th{font-size:9px;padding:6px 8px}
+  td{padding:6px 8px;font-size:11px}
+  tr{display:flex;flex-direction:column;border-bottom:2px solid #1a2035;margin-bottom:12px}
+  tr:last-child{border-bottom:1px solid #0f1623}
+  th{display:none}
+  td::before{content:attr(data-label);display:block;font-weight:700;font-size:10px;color:#6b7280;margin-bottom:2px}
+  input,select,textarea{font-size:12px;padding:8px 10px}
+  .tag{font-size:9px;padding:2px 6px}
+  .pro-banner{flex-direction:column;text-align:center;padding:16px}
+  .pro-banner > div:nth-child(2){width:100%}
+  .breadcrumb{gap:4px;font-size:11px}
+  .modal-overlay{padding:8px}
+  .main-container{padding:16px}
+  .card{border-radius:10px}
+}
 `;
 const sEl = document.createElement("style"); sEl.textContent = G; document.head.appendChild(sEl);
 
@@ -1434,135 +1478,6 @@ export default function App() {
                       {[["Players",t.players],["Wins",t.wins],["Losses",t.losses]].map(([l,v])=><div key={l} style={{background:"#111827",borderRadius:8,padding:"8px",textAlign:"center"}}><div style={{fontFamily:"'Bebas Neue'",fontSize:22,color:t.color}}>{v}</div><div style={{fontSize:10,color:"#6b7280"}}>{l}</div></div>)}
                     </div>
                     <div style={{fontSize:12,color:"#6b7280"}}>👑 {t.captain} · 📍 {t.city}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        )}
-
-        {/* ── TOURNAMENTS ── */}
-        {tab==="tournaments"&&(
-          deepView?.type==="tournament" ? (
-            <div className="fadeIn">
-              <div className="breadcrumb"><span className="bc-link" onClick={closeDeep}>Tournaments</span><span>›</span><span style={{color:"#e8eaf6"}}>{deepView.item.name}</span></div>
-              <div className="card" style={{padding:24,marginBottom:20}}>
-                <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
-                  <span className={`tag ${deepView.item.status==="Ongoing"?"tag-green":deepView.item.status==="Upcoming"?"tag-blue":"tag-yellow"}`}>{deepView.item.status}</span>
-                  <span className="tag tag-purple">{deepView.item.format}</span>
-                </div>
-                <div style={{fontFamily:"'Bebas Neue'",fontSize:30,marginBottom:6}}>{deepView.item.name}</div>
-                <div style={{fontSize:13,color:"#9ca3af",marginBottom:12}}>{deepView.item.description}</div>
-                <div style={{display:"flex",gap:20,fontSize:13,color:"#6b7280",flexWrap:"wrap"}}><span>📅 {fmtDate(deepView.item.startDate)} → {fmtDate(deepView.item.endDate)}</span><span>🏆 {deepView.item.prize}</span></div>
-                {currentUser.role===ROLES.PLAYER&&deepView.item.status==="Upcoming"&&(
-                  <button className="btn-ghost" style={{marginTop:14,fontSize:13}} onClick={()=>{if(currentUser.team&&!deepView.item.registered.includes(currentUser.team)){setTournaments(ts=>ts.map(t=>t.id===deepView.item.id?{...t,registered:[...t.registered,currentUser.team]}:t));notify("Registered!");}else notify("Already registered or no team","error");}}>
-                    + Register My Team
-                  </button>
-                )}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"1.3fr 1fr",gap:20}}>
-                <div className="card" style={{padding:20}}>
-                  <div className="section-title" style={{fontSize:18,marginBottom:16}}>STANDINGS</div>
-                  {deepView.item.registered.map((tname,i)=>{
-                    const t=teams.find(x=>x.name===tname)||{};
-                    const played=matches.filter(m=>m.status==="completed"&&(m.team1===tname||m.team2===tname));
-                    const wins=played.filter(m=>m.winner===tname).length;
-                    return (
-                      <div key={tname} className="card-click" style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderBottom:"1px solid #0f1623"}} onClick={()=>{const team=teams.find(x=>x.name===tname);if(team){setTab("teams");openDeep("team",team);}}}>
-                        <span style={{fontFamily:"'Bebas Neue'",fontSize:18,color:i===0?"#f59e0b":"#4b5563",width:20}}>{i+1}</span>
-                        <span>{t.logo||"🔵"}</span>
-                        <div style={{flex:1}}><div style={{fontWeight:600,fontSize:13}}>{tname}</div><div style={{fontSize:11,color:"#6b7280"}}>{played.length}P {wins}W</div></div>
-                        <div style={{fontFamily:"'Bebas Neue'",fontSize:18,color:"#f59e0b"}}>{wins*2}pts</div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="card" style={{padding:20}}>
-                  <div className="section-title" style={{fontSize:18,marginBottom:16}}>FIXTURES</div>
-                  {matches.filter(m=>m.tournament===deepView.item.name).map(m=>(
-                    <div key={m.id} className="card-click" style={{padding:"10px 0",borderBottom:"1px solid #0f1623"}} onClick={()=>{setTab("matches");openDeep("match",m);}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontWeight:600,fontSize:13}}>{m.team1} vs {m.team2}</div><span className={`tag ${m.status==="live"?"tag-red":m.status==="completed"?"tag-green":"tag-blue"}`} style={{fontSize:10}}>{m.status}</span></div>
-                      {m.winner&&<div style={{fontSize:12,color:"#00e5a0",fontWeight:600}}>🏆 {m.winner}</div>}
-                      <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{fmtDate(m.date)}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="fadeIn">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-                <h1 className="section-title">TOURNAMENTS & LEAGUES</h1>
-                {CAN.editTournament(currentUser.role)&&<button className="btn-primary" onClick={()=>{setModal("addTournament");setForm({format:"T20",teams:8,registered:[]});}}>+ Create</button>}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16}}>
-                {tournaments.map(t=>(
-                  <div key={t.id} className="card card-click" style={{padding:24}} onClick={()=>openDeep("tournament",t)}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><span className={`tag ${t.status==="Ongoing"?"tag-green":t.status==="Upcoming"?"tag-blue":"tag-yellow"}`}>{t.status}</span><span className="tag tag-purple">{t.format}</span></div>
-                    <div style={{fontFamily:"'Bebas Neue'",fontSize:22,marginBottom:4}}>{t.name}</div>
-                    <div style={{fontSize:12,color:"#9ca3af",marginBottom:12}}>{t.description}</div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
-                      {[["Teams",t.teams],["Registered",t.registered.length],["Prize",t.prize]].map(([l,v])=><div key={l} style={{background:"#111827",borderRadius:8,padding:"8px",textAlign:"center"}}><div style={{fontFamily:"'Bebas Neue'",fontSize:18,color:"#00e5a0"}}>{v}</div><div style={{fontSize:10,color:"#6b7280"}}>{l}</div></div>)}
-                    </div>
-                    <div style={{fontSize:12,color:"#6b7280"}}>📅 {fmtDate(t.startDate)} → {fmtDate(t.endDate)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        )}
-
-        {/* ── GROUNDS ── */}
-        {tab==="grounds"&&(
-          deepView?.type==="ground" ? (
-            <div className="fadeIn">
-              <div className="breadcrumb"><span className="bc-link" onClick={closeDeep}>Grounds</span><span>›</span><span style={{color:"#e8eaf6"}}>{deepView.item.name}</span></div>
-              <div className="card" style={{padding:24,marginBottom:20}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div><div style={{fontFamily:"'Bebas Neue'",fontSize:28}}>{deepView.item.name}</div><div style={{fontSize:13,color:"#9ca3af"}}>📍 {deepView.item.city}</div>
-                    <div style={{display:"flex",gap:8,marginTop:10,flexWrap:"wrap"}}><span className={`tag ${deepView.item.status==="Available"?"tag-green":deepView.item.status==="Booked"?"tag-blue":"tag-yellow"}`}>{deepView.item.status}</span><span className="tag tag-purple">{deepView.item.pitchType} Pitch</span>{deepView.item.floodlights&&<span className="tag tag-yellow">💡 Floodlights</span>}</div>
-                  </div>
-                  {CAN.editGround(currentUser.role)&&deepView.item.status==="Available"&&<button className="btn-primary" onClick={()=>{setGrounds(gs=>gs.map(x=>x.id===deepView.item.id?{...x,status:"Booked"}:x));notify("Ground booked!");}}>Book Ground</button>}
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginTop:20}}>
-                  {[["Capacity",deepView.item.capacity.toLocaleString()],["Pitch",deepView.item.pitchType],["Contact",deepView.item.contact||"N/A"],["Matches",matches.filter(m=>m.ground===deepView.item.name).length]].map(([l,v])=><div key={l} className="stat-box"><div className="val" style={{fontSize:20}}>{v}</div><div className="lbl">{l}</div></div>)}
-                </div>
-                {deepView.item.facilities?.length>0&&<div style={{marginTop:16}}><div style={{fontSize:11,color:"#6b7280",marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Facilities</div><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{deepView.item.facilities.map(f=><span key={f} className="tag tag-green">{f}</span>)}</div></div>}
-              </div>
-              <div className="card" style={{padding:20}}>
-                <div className="section-title" style={{fontSize:18,marginBottom:16}}>MATCHES AT THIS GROUND</div>
-                {matches.filter(m=>m.ground===deepView.item.name).length>0 ? (
-                  <table><thead><tr><th>Match</th><th>Date</th><th>Format</th><th>Result</th></tr></thead>
-                    <tbody>{matches.filter(m=>m.ground===deepView.item.name).map(m=>(
-                      <tr key={m.id} className="clickable-row" onClick={()=>{setTab("matches");openDeep("match",m);}}>
-                        <td style={{fontWeight:600}}>{m.team1} vs {m.team2}</td>
-                        <td style={{color:"#6b7280"}}>{fmtDate(m.date)}</td>
-                        <td><span className="tag tag-purple">{m.format}</span></td>
-                        <td>{m.winner?<span style={{color:"#00e5a0",fontWeight:600}}>🏆 {m.winner}</span>:<span className={`tag ${m.status==="live"?"tag-red":"tag-blue"}`}>{m.status}</span>}</td>
-                      </tr>
-                    ))}</tbody>
-                  </table>
-                ) : <div style={{color:"#6b7280",fontSize:13}}>No matches at this ground yet</div>}
-              </div>
-            </div>
-          ) : (
-            <div className="fadeIn">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-                <h1 className="section-title">GROUNDS</h1>
-                {CAN.editGround(currentUser.role)&&<button className="btn-primary" onClick={()=>{setModal("addGround");setForm({status:"Available",pitchType:"Balanced",floodlights:"true"});}}>+ Add Ground</button>}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:16}}>
-                {grounds.map(g=>(
-                  <div key={g.id} className="card card-click" style={{padding:22}} onClick={()=>openDeep("ground",g)}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                      <div><div style={{fontFamily:"'Bebas Neue'",fontSize:20}}>{g.name}</div><div style={{fontSize:12,color:"#9ca3af"}}>📍 {g.city}</div></div>
-                      <span className={`tag ${g.status==="Available"?"tag-green":g.status==="Booked"?"tag-blue":"tag-yellow"}`}>{g.status}</span>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
-                      <div style={{background:"#111827",borderRadius:8,padding:"8px",textAlign:"center"}}><div style={{fontFamily:"'Bebas Neue'",fontSize:20,color:"#00e5a0"}}>{g.capacity.toLocaleString()}</div><div style={{fontSize:10,color:"#6b7280"}}>CAPACITY</div></div>
-                      <div style={{background:"#111827",borderRadius:8,padding:"8px",textAlign:"center"}}><div style={{fontWeight:700,fontSize:13,marginTop:4}}>{g.pitchType}</div><div style={{fontSize:10,color:"#6b7280"}}>PITCH</div></div>
-                    </div>
-                    <div style={{fontSize:12,color:g.floodlights?"#00e5a0":"#6b7280"}}>💡 {g.floodlights?"Floodlights":"No Floodlights"}</div>
                   </div>
                 ))}
               </div>
