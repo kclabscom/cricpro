@@ -712,7 +712,7 @@ function AuthPage({ onLogin }) {
   );
 }
 // ── INNINGS DETAIL DRILL-DOWN ──
-function InningsDetail({ player, innings, onBack, currentUser, onUpgrade }) {
+function InningsDetail({ player, inningsData, onBack, currentUser, onUpgrade }) {
   const [selectedInning, setSelectedInning] = useState(null);
   const data = (inningsData[player.id]||[]) || [];
 
@@ -773,7 +773,7 @@ function InningsDetail({ player, innings, onBack, currentUser, onUpgrade }) {
 }
 
 // ── PERFORMANCE CHARTS ──
-function PerformanceCharts({ player, currentUser, onUpgrade }) {
+function PerformanceCharts({ player, inningsData, currentUser, onUpgrade }) {
   const data = (inningsData[player.id]||[]) || [];
   const runsData = data.slice(-8).map(d=>({val:d.runs,label:fmtDate(d.date).split(" ").slice(0,2).join(" ")}));
   const srData = data.filter(d=>d.balls>0).slice(-8).map(d=>({val:parseFloat(d.sr),label:fmtDate(d.date).split(" ").slice(0,2).join(" ")}));
@@ -813,7 +813,7 @@ function PerformanceCharts({ player, currentUser, onUpgrade }) {
 }
 
 // ── ADVANCED ANALYSIS ──
-function AdvancedAnalysis({ player, currentUser, onUpgrade }) {
+function AdvancedAnalysis({ player, inningsData, currentUser, onUpgrade }) {
   const data = (inningsData[player.id]||[]) || [];
   const byOpponent = {};
   data.forEach(d=>{ if(!byOpponent[d.opponent])byOpponent[d.opponent]={runs:0,inns:0,balls:0}; byOpponent[d.opponent].runs+=d.runs; byOpponent[d.opponent].inns+=1; byOpponent[d.opponent].balls+=d.balls; });
@@ -970,9 +970,9 @@ function PlayerProfile({ player, matches, teams, currentUser, onBack, onUpgrade,
         </div>
       )}
 
-      {profileTab==="innings"&&<InningsDetail player={player} currentUser={currentUser} onBack={()=>setProfileTab("overview")} onUpgrade={onUpgrade}/>}
-      {profileTab==="charts"&&<PerformanceCharts player={player} currentUser={currentUser} onUpgrade={onUpgrade}/>}
-      {profileTab==="analysis"&&<AdvancedAnalysis player={player} currentUser={currentUser} onUpgrade={onUpgrade}/>}
+      {profileTab==="innings"&&<InningsDetail player={player} inningsData={inningsData} currentUser={currentUser} onBack={()=>setProfileTab("overview")} onUpgrade={onUpgrade}/>}
+      {profileTab==="charts"&&<PerformanceCharts player={player} inningsData={inningsData} currentUser={currentUser} onUpgrade={onUpgrade}/>}
+      {profileTab==="analysis"&&<AdvancedAnalysis player={player} inningsData={inningsData} currentUser={currentUser} onUpgrade={onUpgrade}/>}
     </div>
   );
 }
