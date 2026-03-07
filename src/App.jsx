@@ -448,7 +448,7 @@ function AuthPage({ onLogin }) {
     setError("");
     try {
       const allUsers = await DB.getAll(DB.KEYS.USERS);
-      const u = allUsers.find(u=>u.email?.toLowerCase()===form.email.toLowerCase()&&u.password===form.password);
+      const u = allUsers.find(u=>u.email?.toLowerCase()===form.email.toLowerCase()&&u.password_hash===form.password);
       if(u) {
         await onLogin(u);
       } else {
@@ -490,7 +490,7 @@ function AuthPage({ onLogin }) {
         id:uid(), 
         name:form.name.trim(), 
         email:form.email.toLowerCase().trim(),
-        password:form.password, 
+        password_hash:form.password, 
         role:form.role||ROLES.PLAYER, 
         plan:form.plan||PLANS.FREE,
         team:null, 
@@ -1810,13 +1810,13 @@ function AccountSettings({ currentUser, setCurrentUser, users, setUsers, notify,
   };
 
   const changePassword = () => {
-    if (pwForm.current !== currentUser.password) { setPwError("Current password is incorrect"); return; }
+    if (pwForm.current !== currentUser.password_hash) { setPwError("Current password is incorrect"); return; }
     if (pwForm.newpw.length < 6) { setPwError("New password must be at least 6 characters"); return; }
     if (pwForm.newpw !== pwForm.confirm) { setPwError("Passwords don't match"); return; }
-    const updated = { ...currentUser, password: pwForm.newpw };
+    const updated = { ...currentUser, password_hash: pwForm.newpw };
     setCurrentUser(updated);
     setUsers(us => us.map(u => u.id === currentUser.id ? updated : u));
-    DB.update(DB.KEYS.USERS, currentUser.id, {password:pwForm.newpw});
+    DB.update(DB.KEYS.USERS, currentUser.id, {password_hash:pwForm.newpw});
     setPwForm({ current:"", newpw:"", confirm:"" });
     setPwError("");
     notify("Password changed successfully!");
